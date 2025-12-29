@@ -1,6 +1,6 @@
 import httpClient from '../httpClient';
-import { LoginCredentials, AuthResponse } from '../../types/auth';
-import { ApiResponse } from '../../types/api';
+import type { LoginCredentials, AuthResponse } from '../../types/auth';
+import type { ApiResponse } from '../../types/api';
 
 export const authService = {
   login: (credentials: LoginCredentials) =>

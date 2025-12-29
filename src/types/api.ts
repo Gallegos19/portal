@@ -17,18 +17,18 @@ export interface PaginatedResponse<T> {
 export interface ApiError {
   message: string;
   code: string;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export enum DocumentType {
-  CEDULA = 'CEDULA',
-  CERTIFICADO_ESTUDIOS = 'CERTIFICADO_ESTUDIOS',
-  CARTA_ACEPTACION = 'CARTA_ACEPTACION',
-  FOTO = 'FOTO'
+  CEDULA = "CEDULA",
+  CERTIFICADO_ESTUDIOS = "CERTIFICADO_ESTUDIOS",
+  CARTA_ACEPTACION = "CARTA_ACEPTACION",
+  FOTO = "FOTO",
 }
 
 export enum ReportType {
-  ACTIVIDADES = 'ACTIVIDADES',
-  BECAS = 'BECAS',
-  CAPACITACION = 'CAPACITACION'
+  ACTIVIDADES = "ACTIVIDADES",
+  BECAS = "BECAS",
+  CAPACITACION = "CAPACITACION",
 }

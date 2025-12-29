@@ -5,6 +5,7 @@ import RoleGuard from '../guards/RoleGuard';
 import AuthLayout from '../layouts/AuthLayout';
 import LoginPage from '../pages/auth/LoginPage';
 import { UserRole } from '../types/auth';
+import NotFound from '../pages/common/NotFound';
 
 // Lazy load route components
 const BecarioRoutes = React.lazy(() => import('./BecarioRoutes'));
@@ -51,8 +52,8 @@ const AppRouter: React.FC = () => {
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/auth/login" replace />} />
           
-          {/* 404 */}
-          <Route path="*" element={<div>Página no encontrada</div>} />
+          {/* Catch-all route for 404 Not Found */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </React.Suspense>
     </BrowserRouter>
