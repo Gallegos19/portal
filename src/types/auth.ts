@@ -11,7 +11,13 @@ export interface LoginCredentials {
 
 export interface AuthResponse {
   token: string;
-  user: User;
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+  };
 }
 
 export interface User {

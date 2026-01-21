@@ -211,7 +211,7 @@ const BecarioHeader: React.FC = () => {
             gap: { md: 1, lg: 3 }
           }}>
             {menuItems.map((item) => (
-              item.key === 'reportes' || item.key === 'documentos' ? (
+              item.key === 'reportes' ? (
                 <Box key={item.key} sx={{ position: 'relative' }}>
                   <Button
                     startIcon={item.icon}
@@ -226,13 +226,13 @@ const BecarioHeader: React.FC = () => {
                       textTransform: 'none',
                       px: 2,
                     }}
-                    endIcon={isMobile ? (reportsMenuAnchor ? <ExpandLess /> : <ExpandMore />) : <ExpandMore />}
+                    endIcon={<ExpandMore />}
                     id="reports-button"
                   >
                     {item.label}
                   </Button>
                   <Menu
-                    open={!isMobile && Boolean(reportsMenuAnchor)}
+                    open={Boolean(reportsMenuAnchor)}
                     onClose={() => setReportsMenuAnchor(null)}
                     anchorEl={reportsMenuAnchor}
                     anchorOrigin={{
@@ -251,6 +251,53 @@ const BecarioHeader: React.FC = () => {
                       <MenuItem
                         key={subItem.path}
                         onClick={() => handleReportItemClick(subItem.path)}
+                        selected={location.pathname === subItem.path}
+                      >
+                        {subItem.label}
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </Box>
+              ) : item.key === 'documentos' ? (
+                <Box key={item.key} sx={{ position: 'relative' }}>
+                  <Button
+                    startIcon={item.icon}
+                    onClick={handleDocumentsClick}
+                    sx={{
+                      color: isDocumentActive() ? '#26C6DA' : '#64748b',
+                      fontWeight: isDocumentActive() ? 600 : 400,
+                      '&:hover': {
+                        bgcolor: 'transparent',
+                        color: '#26C6DA',
+                      },
+                      textTransform: 'none',
+                      px: 2,
+                    }}
+                    endIcon={<ExpandMore />}
+                    id="documents-button"
+                  >
+                    {item.label}
+                  </Button>
+                  <Menu
+                    open={Boolean(documentsMenuAnchor)}
+                    onClose={() => setDocumentsMenuAnchor(null)}
+                    anchorEl={documentsMenuAnchor}
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'left',
+                    }}
+                    transformOrigin={{
+                      vertical: 'top',
+                      horizontal: 'left',
+                    }}
+                    MenuListProps={{
+                      'aria-labelledby': 'documents-button',
+                    }}
+                  >
+                    {item.items?.map((subItem) => (
+                      <MenuItem
+                        key={subItem.path}
+                        onClick={() => handleDocumentItemClick(subItem.path)}
                         selected={location.pathname === subItem.path}
                       >
                         {subItem.label}
@@ -362,6 +409,47 @@ const BecarioHeader: React.FC = () => {
                       <ListItemButton
                         key={subItem.path}
                         onClick={() => handleReportItemClick(subItem.path)}
+                        sx={{
+                          pl: 4,
+                          color: location.pathname === subItem.path ? '#26C6DA' : '#64748b',
+                          fontWeight: location.pathname === subItem.path ? 600 : 400,
+                          '&:hover': {
+                            bgcolor: 'transparent',
+                            color: '#26C6DA',
+                          },
+                        }}
+                      >
+                        <ListItemText primary={subItem.label} />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Collapse>
+              </React.Fragment>
+            ) : item.key === 'documentos' ? (
+              <React.Fragment key={item.key}>
+                <ListItemButton
+                  onClick={handleDocumentsClick}
+                  sx={{
+                    color: isDocumentActive() ? '#26C6DA' : '#64748b',
+                    fontWeight: isDocumentActive() ? 600 : 400,
+                    '&:hover': {
+                      bgcolor: 'transparent',
+                      color: '#26C6DA',
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.label} />
+                  {documentsMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                </ListItemButton>
+                <Collapse in={documentsMenuOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {item.items?.map((subItem) => (
+                      <ListItemButton
+                        key={subItem.path}
+                        onClick={() => handleDocumentItemClick(subItem.path)}
                         sx={{
                           pl: 4,
                           color: location.pathname === subItem.path ? '#26C6DA' : '#64748b',

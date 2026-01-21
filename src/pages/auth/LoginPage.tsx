@@ -90,8 +90,10 @@ const LoginPage: React.FC = () => {
             navigate("/");
         }
       }
-    } catch (err: unknown) {
-      setError(err.response?.data?.message || "Error al iniciar sesión");
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || err?.message || "Error al iniciar sesión. Verifica tus credenciales.";
+      setError(errorMessage);
+      console.error("Error de login:", err);
     }
   };
 
