@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Box, CircularProgress } from '@mui/material';
 
 interface SessionInitializerProps {
   children: React.ReactNode;
 }
+
+// Variable de módulo para controlar que solo se inicialice UNA vez
+let hasInitializedSession = false;
 
 /**
  * Componente que inicializa la sesión cifrada al cargar la aplicación
@@ -14,9 +17,13 @@ export const SessionInitializer: React.FC<SessionInitializerProps> = ({ children
   const { isInitialized, initializeSession } = useAuthStore();
 
   useEffect(() => {
-    // Inicializar sesión al montar el componente
-    initializeSession();
-  }, [initializeSession]);
+    // Inicializar sesión solo una vez, incluso con React StrictMode
+    if (!hasInitializedSession) {
+      hasInitializedSession = true;
+      initializeSession();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Mostrar loader mientras se inicializa
   if (!isInitialized) {

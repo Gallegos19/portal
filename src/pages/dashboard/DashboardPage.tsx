@@ -5,16 +5,13 @@ import { USER_ROLES } from '../../utils/constants';
 import BecarioDashboard from './BecarioDashboard';
 import AdminDashboard from './AdminDashboard';
 import FacilitadorDashboard from './FacilitadorDashboard';
+import LoadingScreen from '../../components/common/LoadingScreen';
 
 const DashboardPage: React.FC = () => {
   const { user, userRole } = useAuthStore();
 
   if (!user || !userRole) {
-    return (
-      <Container>
-        <Typography>Cargando...</Typography>
-      </Container>
-    );
+    return <LoadingScreen message="Cargando panel de control..." />;
   }
 
   const renderDashboard = () => {

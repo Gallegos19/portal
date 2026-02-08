@@ -28,13 +28,19 @@ import { useAuthStore } from "../../store/authStore";
 import { ROUTES, USER_ROLES } from "../../utils/constants";
 
 const LoginPage: React.FC = () => {
-  const [chid, setChid] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [chidValid, setChidValid] = useState<boolean | null>(null);
+  const [emailValid, setEmailValid] = useState<boolean | null>(null);
   const [passwordValid, setPasswordValid] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  // Función para validar formato de email
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const { login, isLoading } = useAuthStore();
   const navigate = useNavigate();
@@ -43,16 +49,16 @@ const LoginPage: React.FC = () => {
     setMounted(true);
   }, []);
 
-  // Validación en tiempo real para CHID
+  // Validación en tiempo real para email
   useEffect(() => {
-    if (chid.length === 0) {
-      setChidValid(null);
-    } else if (chid.length >= 3) {
-      setChidValid(true);
+    if (email.length === 0) {
+      setEmailValid(null);
+    } else if (isValidEmail(email)) {
+      setEmailValid(true);
     } else {
-      setChidValid(false);
+      setEmailValid(false);
     }
-  }, [chid]);
+  }, [email]);
 
   // Validación en tiempo real para contraseña
   useEffect(() => {
@@ -70,8 +76,7 @@ const LoginPage: React.FC = () => {
     setError("");
 
     try {
-      // Usar CHID como email para el login
-      await login({ email: chid, password });
+      await login({ email, password });
 
       // Redirect based on user role
       const user = useAuthStore.getState().user;
@@ -91,7 +96,22 @@ const LoginPage: React.FC = () => {
         }
       }
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.message || "Error al iniciar sesión. Verifica tus credenciales.";
+      // Manejar errores de autenticación
+      const status = err?.response?.status;
+      let errorMessage = "";
+      
+      if (status === 401 || status === 403) {
+        errorMessage = "Correo o contraseña incorrecta. Por favor, verifica tus credenciales.";
+      } else if (status === 404) {
+        errorMessage = "Usuario no encontrado. Verifica tu correo electrónico.";
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else {
+        errorMessage = "Error al iniciar sesión. Por favor, intenta nuevamente.";
+      }
+      
       setError(errorMessage);
       console.error("Error de login:", err);
     }
@@ -242,7 +262,7 @@ const LoginPage: React.FC = () => {
 
               {/* Formulario mejorado */}
               <Box component="form" onSubmit={handleSubmit}>
-                {/* Campo CHID mejorado */}
+                {/* Campo Correo Electrónico */}
                 <Box sx={{ mb: 3 }}>
                   <Box
                     sx={{
@@ -255,7 +275,7 @@ const LoginPage: React.FC = () => {
                     }}
                   >
                     <PersonOutline sx={{ fontSize: 18, mr: 1 }} />
-                    CHID
+                    Correo Electrónico
                     <Chip
                       label="*"
                       size="small"
@@ -270,9 +290,10 @@ const LoginPage: React.FC = () => {
                   </Box>
                   <TextField
                     fullWidth
-                    value={chid}
-                    onChange={(e) => setChid(e.target.value)}
-                    placeholder="Ingrese su CHID"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ejemplo@correo.com"
                     required
                     variant="outlined"
                     size="medium"
@@ -283,17 +304,17 @@ const LoginPage: React.FC = () => {
                         transition: "all 0.2s ease",
                         "& fieldset": {
                           borderColor:
-                            chidValid === false ? "#ef4444" : "#e2e8f0",
+                            emailValid === false ? "#ef4444" : "#e2e8f0",
                           borderWidth: "2px",
                         },
                         "&:hover fieldset": {
                           borderColor:
-                            chidValid === false ? "#ef4444" : "#26C6DA",
+                            emailValid === false ? "#ef4444" : "#26C6DA",
                         },
                         "&.Mui-focused fieldset": {
                           borderColor:
-                            chidValid === false ? "#ef4444" : "#26C6DA",
-                          boxShadow: `0 0 0 3px ${chidValid === false ? "#fecaca" : "#a7f3d0"}`,
+                            emailValid === false ? "#ef4444" : "#26C6DA",
+                          boxShadow: `0 0 0 3px ${emailValid === false ? "#fecaca" : "#a7f3d0"}`,
                         },
                       },
                       "& .MuiInputBase-input": {
@@ -303,7 +324,7 @@ const LoginPage: React.FC = () => {
                     }}
                     slotProps={{
                       input: {
-                        endAdornment: chidValid === true && (
+                        endAdornment: emailValid === true && (
                           <InputAdornment position="end">
                             <CheckCircleOutline
                               sx={{ color: "#10b981", fontSize: 20 }}
@@ -313,7 +334,7 @@ const LoginPage: React.FC = () => {
                       },
                     }}
                   />
-                  {chidValid === false && (
+                  {emailValid === false && (
                     <Typography
                       variant="caption"
                       sx={{
@@ -325,7 +346,7 @@ const LoginPage: React.FC = () => {
                       }}
                     >
                       <ErrorOutline sx={{ fontSize: 14, mr: 0.5 }} />
-                      El CHID debe tener al menos 3 caracteres
+                      Por favor, ingresa un correo electrónico válido
                     </Typography>
                   )}
                 </Box>
@@ -470,10 +491,10 @@ const LoginPage: React.FC = () => {
                   fullWidth
                   variant="contained"
                   disabled={
-                    !chid ||
+                    !email ||
                     !password ||
                     isLoading ||
-                    chidValid === false ||
+                    emailValid === false ||
                     passwordValid === false
                   }
                   sx={{
@@ -513,114 +534,7 @@ const LoginPage: React.FC = () => {
                   ) : (
                     "Ingresar"
                   )}
-                </Button>
-
-                {/* Credenciales de prueba */}
-                <Box sx={{ mt: 4, p: 3, bgcolor: "#f8fafc", borderRadius: 2, border: "1px solid #e2e8f0" }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#475569", mb: 2, textAlign: "center" }}>
-                    🔑 Credenciales de Prueba
-                  </Typography>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                    <Box 
-                      sx={{ 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center",
-                        p: 1.5,
-                        bgcolor: "white",
-                        borderRadius: 1,
-                        border: "1px solid #e2e8f0",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          bgcolor: "#f1f5f9",
-                          borderColor: "#26C6DA",
-                        }
-                      }}
-                      onClick={() => {
-                        setChid("becario123");
-                        setPassword("123456");
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="caption" sx={{ color: "#26C6DA", fontWeight: 600 }}>
-                          BECARIO
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: "12px", color: "#64748b" }}>
-                          becario123 / 123456
-                        </Typography>
-                      </Box>
-                      <Chip label="Becario" size="small" sx={{ bgcolor: "#dbeafe", color: "#1e40af", fontSize: "10px" }} />
-                    </Box>
-
-                    <Box 
-                      sx={{ 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center",
-                        p: 1.5,
-                        bgcolor: "white",
-                        borderRadius: 1,
-                        border: "1px solid #e2e8f0",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          bgcolor: "#f1f5f9",
-                          borderColor: "#26C6DA",
-                        }
-                      }}
-                      onClick={() => {
-                        setChid("admin123");
-                        setPassword("123456");
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="caption" sx={{ color: "#26C6DA", fontWeight: 600 }}>
-                          ADMIN
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: "12px", color: "#64748b" }}>
-                          admin123 / 123456
-                        </Typography>
-                      </Box>
-                      <Chip label="Admin" size="small" sx={{ bgcolor: "#fef3c7", color: "#92400e", fontSize: "10px" }} />
-                    </Box>
-
-                    <Box 
-                      sx={{ 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center",
-                        p: 1.5,
-                        bgcolor: "white",
-                        borderRadius: 1,
-                        border: "1px solid #e2e8f0",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          bgcolor: "#f1f5f9",
-                          borderColor: "#26C6DA",
-                        }
-                      }}
-                      onClick={() => {
-                        setChid("facilitador123");
-                        setPassword("123456");
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="caption" sx={{ color: "#26C6DA", fontWeight: 600 }}>
-                          FACILITADOR
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontSize: "12px", color: "#64748b" }}>
-                          facilitador123 / 123456
-                        </Typography>
-                      </Box>
-                      <Chip label="Facilitador" size="small" sx={{ bgcolor: "#dcfce7", color: "#166534", fontSize: "10px" }} />
-                    </Box>
-                  </Box>
-                  <Typography variant="caption" sx={{ color: "#64748b", textAlign: "center", display: "block", mt: 2 }}>
-                    Haz clic en cualquier credencial para autocompletar
-                  </Typography>
-                </Box>
+                </Button>       
               </Box>
             </Card>
           </Slide>

@@ -6,6 +6,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import LoginPage from '../pages/auth/LoginPage';
 import { UserRole } from '../types/auth';
 import NotFound from '../pages/common/NotFound';
+import LoadingScreen from '../components/common/LoadingScreen';
 
 // Lazy load route components
 const BecarioRoutes = React.lazy(() => import('./BecarioRoutes'));
@@ -15,7 +16,7 @@ const AdminRoutes = React.lazy(() => import('./AdminRoutes'));
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
-      <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen">Cargando...</div>}>
+      <React.Suspense fallback={<LoadingScreen message="Cargando módulo..." />}>
         <Routes>
           {/* Auth Routes */}
           <Route path="/auth" element={<AuthLayout />}>
