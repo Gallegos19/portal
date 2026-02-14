@@ -65,6 +65,23 @@ export interface Intern {
   school_year_id?: string;
 }
 
+export interface Subproject {
+  id: string;
+  name: string;
+  description?: string;
+  region_id?: string;
+  status_id?: string;
+  coordinator_id?: string;
+  social_facilitator_id?: string;
+  school_year_id?: string;
+}
+
+export interface Region {
+  id: string;
+  name: string;
+  status_id?: string;
+}
+
 export interface UserApi {
   id: string;
   first_name: string;

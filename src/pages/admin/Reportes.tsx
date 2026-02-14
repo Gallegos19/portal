@@ -50,6 +50,23 @@ const formatDate = (value?: string): string => {
   });
 };
 
+const getFileExtension = (url: string): string => {
+  const pathname = new URL(url).pathname;
+  const filename = pathname.split('/').pop() ?? '';
+
+  if (!filename.includes('.')) {
+    return '';
+  }
+
+  return filename.split('.').pop()?.toLowerCase() ?? '';
+};
+
+const isSpreadsheet = (url: string): boolean => {
+  const extension = getFileExtension(url);
+
+  return ['xls', 'xlsx', 'csv'].includes(extension);
+};
+
 const buildUserMap = (users: UserApi[]): Map<string, UserApi> => {
   return new Map(users.map((user) => [user.id, user]));
 };
@@ -145,7 +162,11 @@ const Reportes: React.FC = () => {
       const signedUrl = response.data.signed_url;
 
       if (mode === 'view') {
-        window.open(signedUrl, '_blank', 'noopener,noreferrer');
+        const targetUrl = isSpreadsheet(signedUrl)
+          ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(signedUrl)}`
+          : signedUrl;
+
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
         return;
       }
 
