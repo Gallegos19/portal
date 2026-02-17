@@ -20,6 +20,34 @@ export interface ApiError {
   details?: Record<string, unknown>;
 }
 
+interface BaseEntity {
+  id: string;
+}
+
+interface BaseNamedEntity extends BaseEntity {
+  title: string;
+  description?: string;
+}
+
+interface BaseAuditedEntity extends BaseEntity {
+  created_by: string;
+  created_at: string;
+  school_year_id?: string;
+  status_id?: string;
+}
+
+interface BaseStatusEntity extends BaseEntity {
+  status_id?: string;
+}
+
+export const Status = {
+  '36b08c13-fa5a-4761-a040-811f6e571b11': "ACTIVO",
+  '4f58dd2d-e305-4f60-9f90-b65deb048a2b': "INACTIVO",
+  'dfbac22b-3f2b-4d7f-9dde-21159ebd8d06': "ELIMINADO",
+} as const;
+
+export type Status = typeof Status[keyof typeof Status];
+
 export enum DocumentType {
   CEDULA = "CEDULA",
   CERTIFICADO_ESTUDIOS = "CERTIFICADO_ESTUDIOS",
@@ -33,20 +61,12 @@ export enum ReportType {
   CAPACITACION = "CAPACITACION",
 }
 
-export interface Report {
-  id: string;
-  title: string;
-  description?: string;
+export interface Report extends BaseNamedEntity, BaseAuditedEntity {
   type?: string;
   id_archive?: string;
-  created_at: string;
-  created_by: string;
-  status_id?: string;
-  school_year_id?: string;
 }
 
-export interface Intern {
-  id: string;
+export interface Intern extends BaseEntity {
   chid: string;
   id_user: string;
   status: boolean;
@@ -65,8 +85,7 @@ export interface Intern {
   school_year_id?: string;
 }
 
-export interface Subproject {
-  id: string;
+export interface Subproject extends BaseEntity {
   name: string;
   description?: string;
   region_id?: string;
@@ -76,14 +95,71 @@ export interface Subproject {
   school_year_id?: string;
 }
 
-export interface Region {
-  id: string;
-  name: string;
+export interface Coordinator extends BaseStatusEntity {
+  id_user: string;
+  id_region: string;
+}
+
+export interface Document extends BaseNamedEntity {
+  internId: string;
+  id_archive: string;
+  school_year_id?: string;
   status_id?: string;
 }
 
-export interface UserApi {
-  id: string;
+export interface EventPhoto extends BaseEntity {
+  id_event: string;
+  id_photo: string;
+}
+
+export interface Event extends BaseNamedEntity, BaseAuditedEntity {}
+
+export interface Photo extends BaseNamedEntity {
+  id_archive: string;
+}
+
+export interface Format extends BaseNamedEntity {
+  id_archive: string;
+}
+
+export interface SchoolYear extends BaseEntity {
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+}
+
+export interface SocialFacilitator extends BaseStatusEntity {
+  id_user: string;
+  id_region: string;
+}
+
+export interface SuccessStory extends BaseNamedEntity, BaseAuditedEntity {
+  id_photo?: string;
+}
+
+export interface TrainingProgress extends BaseEntity {
+  id_training: string;
+  id_user: string;
+  completed: boolean;
+  progress_percentage: number;
+  completed_at?: string;
+  last_viewed_at?: string;
+}
+
+export interface Training extends BaseNamedEntity {
+  target_audience?: string;
+  school_year_id?: string;
+  status_id?: string;
+  url: string;
+  tiempo: string;
+}
+
+export interface Region extends BaseStatusEntity {
+  name: string;
+}
+
+export interface UserApi extends BaseEntity {
   first_name: string;
   last_name: string;
   email: string;
