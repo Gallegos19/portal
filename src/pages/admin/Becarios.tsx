@@ -11,8 +11,8 @@ import {
 import {
   Refresh as RefreshIcon
 } from '@mui/icons-material';
-import type { AlertColor } from '@mui/material';
 import type { Intern, Region, SocialFacilitator, Subproject, UserApi } from '../../types/api';
+import { useToast } from '../../hooks/useToast';
 import { internService } from '../../services/api/intern';
 import { regionService } from '../../services/api/region';
 import { socialFacilitatorService } from '../../services/api/socialFacilitator';
@@ -74,12 +74,6 @@ const buildFacilitatorMap = (
   return new Map(entries);
 };
 
-interface ToastState {
-  open: boolean;
-  message: string;
-  severity: AlertColor;
-}
-
 const Becarios: React.FC = () => {
   const [interns, setInterns] = React.useState<Intern[]>([]);
   const [users, setUsers] = React.useState<UserApi[]>([]);
@@ -98,11 +92,7 @@ const Becarios: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [toast, setToast] = React.useState<ToastState>({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
+  const { toast, showToast, closeToast } = useToast();
   const [internPendingDelete, setInternPendingDelete] = React.useState<Intern | null>(null);
 
   const userMap = React.useMemo(() => buildUserMap(users), [users]);
@@ -233,25 +223,10 @@ const Becarios: React.FC = () => {
 
     try {
       await navigator.clipboard.writeText(email);
-      setToast({
-        open: true,
-        message: 'Correo copiado',
-        severity: 'success'
-      });
+      showToast('Correo copiado');
     } catch (error) {
       console.error('No se pudo copiar el correo:', error);
     }
-  };
-
-  const handleCloseToast = (_event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-
-    setToast((current) => ({
-      ...current,
-      open: false
-    }));
   };
 
   const handleEditIntern = (intern: Intern) => {
@@ -316,11 +291,7 @@ const Becarios: React.FC = () => {
       await internService.deleteById(internPendingDelete.id);
       setSelectedIntern((current) => (current?.id === internPendingDelete.id ? null : current));
       setInternPendingDelete(null);
-      setToast({
-        open: true,
-        message: 'Eliminado correctamente',
-        severity: 'success'
-      });
+      showToast('Eliminado correctamente');
       await loadData();
     } catch (error) {
       console.error('Error eliminando becario:', error);
@@ -452,10 +423,10 @@ const Becarios: React.FC = () => {
       <Snackbar
         open={toast.open}
         autoHideDuration={2200}
-        onClose={handleCloseToast}
+        onClose={(_, reason) => closeToast(reason)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseToast} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
+        <Alert onClose={() => closeToast()} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
           {toast.message}
         </Alert>
       </Snackbar>
