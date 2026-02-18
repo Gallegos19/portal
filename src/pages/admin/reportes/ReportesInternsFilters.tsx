@@ -12,9 +12,9 @@ import {
 import { Search as SearchIcon } from '@mui/icons-material';
 import type { Region, SocialFacilitator, Subproject } from '../../../types/api';
 
-interface BecariosFiltersProps {
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
+interface ReportesInternsFiltersProps {
+  internSearch: string;
+  onInternSearchChange: (value: string) => void;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
   facilitatorFilter: string;
@@ -30,9 +30,9 @@ interface BecariosFiltersProps {
   totalCount: number;
 }
 
-const BecariosFilters: React.FC<BecariosFiltersProps> = ({
-  searchTerm,
-  onSearchChange,
+const ReportesInternsFilters: React.FC<ReportesInternsFiltersProps> = ({
+  internSearch,
+  onInternSearchChange,
   statusFilter,
   onStatusFilterChange,
   facilitatorFilter,
@@ -61,8 +61,8 @@ const BecariosFilters: React.FC<BecariosFiltersProps> = ({
         <TextField
           size="small"
           placeholder="Buscar por nombre, correo o CHID..."
-          value={searchTerm}
-          onChange={(event) => onSearchChange(event.target.value)}
+          value={internSearch}
+          onChange={(event) => onInternSearchChange(event.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -140,4 +140,4 @@ const BecariosFilters: React.FC<BecariosFiltersProps> = ({
   );
 };
 
-export default BecariosFilters;
+export default ReportesInternsFilters;

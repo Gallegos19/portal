@@ -3,21 +3,23 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   Container,
   Paper,
+  Snackbar,
   Typography
 } from '@mui/material';
 import {
-  Refresh as RefreshIcon,
-  Search as SearchIcon
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
-import type { Intern, SocialFacilitator, Subproject, UserApi } from '../../types/api';
+import type { AlertColor } from '@mui/material';
+import type { Intern, Region, SocialFacilitator, Subproject, UserApi } from '../../types/api';
 import { internService } from '../../services/api/intern';
+import { regionService } from '../../services/api/region';
 import { socialFacilitatorService } from '../../services/api/socialFacilitator';
 import { subprojectService } from '../../services/api/subproject';
 import { userService } from '../../services/api/user';
 import {
+  BecariosDeleteDialog,
   BecariosDetailPanel,
   BecariosEditDialog,
   BecariosFilters,
@@ -50,6 +52,14 @@ const buildSubprojectMap = (subprojects: Subproject[]): Map<string, Subproject> 
   return new Map(subprojects.map((subproject) => [subproject.id, subproject]));
 };
 
+const getSubprojectRegionId = (subproject?: Subproject): string | undefined => {
+  if (!subproject) {
+    return undefined;
+  }
+
+  return subproject.id_region ?? subproject.region_id;
+};
+
 const buildFacilitatorMap = (
   facilitators: SocialFacilitator[],
   userMap: Map<string, UserApi>
@@ -64,10 +74,17 @@ const buildFacilitatorMap = (
   return new Map(entries);
 };
 
+interface ToastState {
+  open: boolean;
+  message: string;
+  severity: AlertColor;
+}
+
 const Becarios: React.FC = () => {
   const [interns, setInterns] = React.useState<Intern[]>([]);
   const [users, setUsers] = React.useState<UserApi[]>([]);
   const [subprojects, setSubprojects] = React.useState<Subproject[]>([]);
+  const [regions, setRegions] = React.useState<Region[]>([]);
   const [facilitators, setFacilitators] = React.useState<SocialFacilitator[]>([]);
   const [selectedIntern, setSelectedIntern] = React.useState<Intern | null>(null);
   const [isEditOpen, setIsEditOpen] = React.useState(false);
@@ -75,11 +92,18 @@ const Becarios: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('todos');
   const [facilitatorFilter, setFacilitatorFilter] = React.useState('todos');
+  const [regionFilter, setRegionFilter] = React.useState('todos');
   const [subprojectFilter, setSubprojectFilter] = React.useState('todos');
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [toast, setToast] = React.useState<ToastState>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+  const [internPendingDelete, setInternPendingDelete] = React.useState<Intern | null>(null);
 
   const userMap = React.useMemo(() => buildUserMap(users), [users]);
   const subprojectMap = React.useMemo(() => buildSubprojectMap(subprojects), [subprojects]);
@@ -93,16 +117,18 @@ const Becarios: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const [internResponse, userResponse, subprojectResponse, facilitatorResponse] = await Promise.all([
+      const [internResponse, userResponse, subprojectResponse, regionResponse, facilitatorResponse] = await Promise.all([
         internService.getAll(),
         userService.getAll(),
         subprojectService.getAll(),
+        regionService.getAll(),
         socialFacilitatorService.getAll()
       ]);
 
       setInterns(internResponse.data);
       setUsers(userResponse.data);
       setSubprojects(subprojectResponse.data);
+      setRegions(regionResponse.data);
       setFacilitators(facilitatorResponse.data);
     } catch (error) {
       console.error('Error cargando becarios:', error);
@@ -127,6 +153,9 @@ const Becarios: React.FC = () => {
       (statusFilter === 'inactivo' && !intern.status);
     const matchesFacilitator =
       facilitatorFilter === 'todos' || intern.id_social_facilitator === facilitatorFilter;
+    const internSubproject = intern.id_subproject ? subprojectMap.get(intern.id_subproject) : undefined;
+    const matchesRegion =
+      regionFilter === 'todos' || getSubprojectRegionId(internSubproject) === regionFilter;
     const matchesSubproject =
       subprojectFilter === 'todos' || intern.id_subproject === subprojectFilter;
 
@@ -136,6 +165,7 @@ const Becarios: React.FC = () => {
         intern.chid.toLowerCase().includes(searchValue)) &&
       matchesStatus &&
       matchesFacilitator &&
+      matchesRegion &&
       matchesSubproject
     );
   });
@@ -203,13 +233,41 @@ const Becarios: React.FC = () => {
 
     try {
       await navigator.clipboard.writeText(email);
+      setToast({
+        open: true,
+        message: 'Correo copiado',
+        severity: 'success'
+      });
     } catch (error) {
       console.error('No se pudo copiar el correo:', error);
     }
   };
 
+  const handleCloseToast = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setToast((current) => ({
+      ...current,
+      open: false
+    }));
+  };
+
   const handleEditIntern = (intern: Intern) => {
     handleOpenEdit(intern);
+  };
+
+  const handleRequestDeleteIntern = (intern: Intern) => {
+    setInternPendingDelete(intern);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    if (isLoading) {
+      return;
+    }
+
+    setInternPendingDelete(null);
   };
 
   const handleSubmitEdit = async () => {
@@ -246,10 +304,8 @@ const Becarios: React.FC = () => {
     }
   };
 
-  const handleDeleteIntern = async (intern: Intern) => {
-    const confirmed = window.confirm('Quieres eliminar este becario?');
-
-    if (!confirmed) {
+  const handleConfirmDeleteIntern = async () => {
+    if (!internPendingDelete) {
       return;
     }
 
@@ -257,8 +313,14 @@ const Becarios: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      await internService.deleteById(intern.id);
-      setSelectedIntern((current) => (current?.id === intern.id ? null : current));
+      await internService.deleteById(internPendingDelete.id);
+      setSelectedIntern((current) => (current?.id === internPendingDelete.id ? null : current));
+      setInternPendingDelete(null);
+      setToast({
+        open: true,
+        message: 'Eliminado correctamente',
+        severity: 'success'
+      });
       await loadData();
     } catch (error) {
       console.error('Error eliminando becario:', error);
@@ -313,6 +375,11 @@ const Becarios: React.FC = () => {
               setFacilitatorFilter(value);
               setPage(0);
             }}
+            regionFilter={regionFilter}
+            onRegionFilterChange={(value) => {
+              setRegionFilter(value);
+              setPage(0);
+            }}
             subprojectFilter={subprojectFilter}
             onSubprojectFilterChange={(value) => {
               setSubprojectFilter(value);
@@ -320,6 +387,7 @@ const Becarios: React.FC = () => {
             }}
             facilitators={facilitators}
             facilitatorMap={facilitatorMap}
+            regions={regions}
             subprojects={subprojects}
             totalCount={filteredInterns.length}
           />
@@ -334,7 +402,7 @@ const Becarios: React.FC = () => {
             totalCount={filteredInterns.length}
             onSelect={handleSelectIntern}
             onEdit={handleEditIntern}
-            onDelete={handleDeleteIntern}
+            onDelete={handleRequestDeleteIntern}
             onCopyEmail={handleCopyEmail}
             onPageChange={setPage}
             onRowsPerPageChange={(value) => {
@@ -368,6 +436,29 @@ const Becarios: React.FC = () => {
         onChange={handleEditChange}
         onSubmit={handleSubmitEdit}
       />
+
+      <BecariosDeleteDialog
+        open={Boolean(internPendingDelete)}
+        isLoading={isLoading}
+        internLabel={
+          internPendingDelete
+            ? `${userMap.get(internPendingDelete.id_user)?.first_name ?? ''} ${userMap.get(internPendingDelete.id_user)?.last_name ?? ''}`.trim() || internPendingDelete.chid
+            : ''
+        }
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDeleteIntern}
+      />
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={2200}
+        onClose={handleCloseToast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseToast} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

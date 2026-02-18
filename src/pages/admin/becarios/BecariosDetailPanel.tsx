@@ -79,7 +79,7 @@ const BecariosDetailPanel: React.FC<BecariosDetailPanelProps> = ({
               Subproyecto
             </Typography>
             <Typography variant="body1">
-              {selectedSubproject?.name ?? 'Sin subproyecto'}
+              {selectedSubproject?.name_subproject ?? 'Sin subproyecto'}
             </Typography>
           </Box>
           <Box>

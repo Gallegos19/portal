@@ -86,8 +86,8 @@ export interface Intern extends BaseEntity {
 }
 
 export interface Subproject extends BaseEntity {
-  name: string;
-  description?: string;
+  name_subproject: string;
+  id_region?: string;
   region_id?: string;
   status_id?: string;
   coordinator_id?: string;
@@ -156,7 +156,8 @@ export interface Training extends BaseNamedEntity {
 }
 
 export interface Region extends BaseStatusEntity {
-  name: string;
+  name_region?: string;
+  name?: string;
 }
 
 export interface UserApi extends BaseEntity {

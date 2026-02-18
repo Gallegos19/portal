@@ -1,36 +1,19 @@
 import React from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  Container,
-  IconButton,
-  InputAdornment,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TextField,
-  Tooltip,
-  Typography,
-  Alert,
-  CircularProgress
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Visibility as VisibilityIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon
-} from '@mui/icons-material';
-import type { Intern, Report, UserApi } from '../../types/api';
-import { internService } from '../../services/api/intern';
-import { userService } from '../../services/api/user';
-import { reportService } from '../../services/api/report';
+import { Alert, Box, Button, Container, Paper, Typography } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
+import type { Intern, Region, Report, SocialFacilitator, Subproject, UserApi } from '../../types/api';
 import { archiveService } from '../../services/api/archive';
+import { internService } from '../../services/api/intern';
+import { regionService } from '../../services/api/region';
+import { reportService } from '../../services/api/report';
+import { socialFacilitatorService } from '../../services/api/socialFacilitator';
+import { subprojectService } from '../../services/api/subproject';
+import { userService } from '../../services/api/user';
+import {
+  ReportesInternsFilters,
+  ReportesInternsTable,
+  ReportesReportsSection
+} from './reportes/index';
 
 const formatDate = (value?: string): string => {
   if (!value) {
@@ -71,6 +54,32 @@ const buildUserMap = (users: UserApi[]): Map<string, UserApi> => {
   return new Map(users.map((user) => [user.id, user]));
 };
 
+const buildSubprojectMap = (subprojects: Subproject[]): Map<string, Subproject> => {
+  return new Map(subprojects.map((subproject) => [subproject.id, subproject]));
+};
+
+const getSubprojectRegionId = (subproject?: Subproject): string | undefined => {
+  if (!subproject) {
+    return undefined;
+  }
+
+  return subproject.id_region ?? subproject.region_id;
+};
+
+const buildFacilitatorMap = (
+  facilitators: SocialFacilitator[],
+  userMap: Map<string, UserApi>
+): Map<string, string> => {
+  const entries = facilitators.map((facilitator) => {
+    const user = userMap.get(facilitator.id_user);
+    const label = user ? `${user.first_name} ${user.last_name}`.trim() : 'Sin nombre';
+
+    return [facilitator.id, label] as const;
+  });
+
+  return new Map(entries);
+};
+
 const getUserLabel = (userMap: Map<string, UserApi>, userId: string): string => {
   const user = userMap.get(userId);
 
@@ -85,35 +94,64 @@ const Reportes: React.FC = () => {
   const [interns, setInterns] = React.useState<Intern[]>([]);
   const [users, setUsers] = React.useState<UserApi[]>([]);
   const [reports, setReports] = React.useState<Report[]>([]);
+  const [subprojects, setSubprojects] = React.useState<Subproject[]>([]);
+  const [regions, setRegions] = React.useState<Region[]>([]);
+  const [facilitators, setFacilitators] = React.useState<SocialFacilitator[]>([]);
+
   const [internReports, setInternReports] = React.useState<Report[]>([]);
   const [selectedIntern, setSelectedIntern] = React.useState<Intern | null>(null);
+
   const [internSearch, setInternSearch] = React.useState('');
   const [reportSearch, setReportSearch] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState('todos');
+  const [facilitatorFilter, setFacilitatorFilter] = React.useState('todos');
+  const [regionFilter, setRegionFilter] = React.useState('todos');
+  const [subprojectFilter, setSubprojectFilter] = React.useState('todos');
+
   const [internPage, setInternPage] = React.useState(0);
   const [internRowsPerPage, setInternRowsPerPage] = React.useState(5);
   const [reportPage, setReportPage] = React.useState(0);
   const [reportRowsPerPage, setReportRowsPerPage] = React.useState(5);
+
   const [isLoading, setIsLoading] = React.useState(false);
   const [isLoadingReports, setIsLoadingReports] = React.useState(false);
   const [activeArchiveId, setActiveArchiveId] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   const userMap = React.useMemo(() => buildUserMap(users), [users]);
+  const subprojectMap = React.useMemo(() => buildSubprojectMap(subprojects), [subprojects]);
+  const facilitatorMap = React.useMemo(
+    () => buildFacilitatorMap(facilitators, userMap),
+    [facilitators, userMap]
+  );
 
   const loadBaseData = React.useCallback(async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const [internResponse, userResponse, reportResponse] = await Promise.all([
+      const [
+        internResponse,
+        userResponse,
+        reportResponse,
+        subprojectResponse,
+        regionResponse,
+        facilitatorResponse
+      ] = await Promise.all([
         internService.getAll(),
         userService.getAll(),
-        reportService.getAll()
+        reportService.getAll(),
+        subprojectService.getAll(),
+        regionService.getAll(),
+        socialFacilitatorService.getAll()
       ]);
 
       setInterns(internResponse.data);
       setUsers(userResponse.data);
       setReports(reportResponse.data);
+      setSubprojects(subprojectResponse.data);
+      setRegions(regionResponse.data);
+      setFacilitators(facilitatorResponse.data);
     } catch (error) {
       console.error('Error cargando datos de reportes:', error);
       setErrorMessage('No se pudieron cargar los datos de reportes.');
@@ -190,21 +228,47 @@ const Reportes: React.FC = () => {
     const user = userMap.get(intern.id_user);
     const name = user ? `${user.first_name} ${user.last_name}` : '';
     const email = user?.email ?? '';
-    const matchesSearch = name.toLowerCase().includes(internSearch.toLowerCase()) ||
-      email.toLowerCase().includes(internSearch.toLowerCase()) ||
-      intern.chid.toLowerCase().includes(internSearch.toLowerCase());
+    const searchValue = internSearch.toLowerCase();
 
-    return matchesSearch;
+    const matchesSearch =
+      name.toLowerCase().includes(searchValue) ||
+      email.toLowerCase().includes(searchValue) ||
+      intern.chid.toLowerCase().includes(searchValue);
+
+    const matchesStatus =
+      statusFilter === 'todos' ||
+      (statusFilter === 'activo' && intern.status) ||
+      (statusFilter === 'inactivo' && !intern.status);
+
+    const matchesFacilitator =
+      facilitatorFilter === 'todos' || intern.id_social_facilitator === facilitatorFilter;
+
+    const internSubproject = intern.id_subproject ? subprojectMap.get(intern.id_subproject) : undefined;
+
+    const matchesRegion =
+      regionFilter === 'todos' || getSubprojectRegionId(internSubproject) === regionFilter;
+
+    const matchesSubproject =
+      subprojectFilter === 'todos' || intern.id_subproject === subprojectFilter;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesFacilitator &&
+      matchesRegion &&
+      matchesSubproject
+    );
   });
 
   const reportList = selectedIntern ? internReports : reports;
 
   const filteredReports = reportList.filter((report) => {
-    const titleMatch = report.title.toLowerCase().includes(reportSearch.toLowerCase());
-    const typeMatch = report.type?.toLowerCase().includes(reportSearch.toLowerCase()) ?? false;
+    const searchValue = reportSearch.toLowerCase();
+    const titleMatch = report.title.toLowerCase().includes(searchValue);
+    const typeMatch = report.type?.toLowerCase().includes(searchValue) ?? false;
     const creatorMatch = getUserLabel(userMap, report.created_by)
       .toLowerCase()
-      .includes(reportSearch.toLowerCase());
+      .includes(searchValue);
 
     return titleMatch || typeMatch || creatorMatch;
   });
@@ -251,218 +315,81 @@ const Reportes: React.FC = () => {
       )}
 
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2, flexWrap: 'wrap' }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Lista de becarios
-          </Typography>
-          <TextField
-            size="small"
-            placeholder="Buscar por nombre, correo o CHID..."
-            value={internSearch}
-            onChange={(event) => {
-              setInternSearch(event.target.value);
-              setInternPage(0);
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-            sx={{ minWidth: 280 }}
-          />
-        </Box>
+        <ReportesInternsFilters
+          internSearch={internSearch}
+          onInternSearchChange={(value) => {
+            setInternSearch(value);
+            setInternPage(0);
+          }}
+          statusFilter={statusFilter}
+          onStatusFilterChange={(value) => {
+            setStatusFilter(value);
+            setInternPage(0);
+          }}
+          facilitatorFilter={facilitatorFilter}
+          onFacilitatorFilterChange={(value) => {
+            setFacilitatorFilter(value);
+            setInternPage(0);
+          }}
+          regionFilter={regionFilter}
+          onRegionFilterChange={(value) => {
+            setRegionFilter(value);
+            setInternPage(0);
+          }}
+          subprojectFilter={subprojectFilter}
+          onSubprojectFilterChange={(value) => {
+            setSubprojectFilter(value);
+            setInternPage(0);
+          }}
+          facilitators={facilitators}
+          facilitatorMap={facilitatorMap}
+          regions={regions}
+          subprojects={subprojects}
+          totalCount={filteredInterns.length}
+        />
 
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        ) : (
-          <>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Nombre</TableCell>
-                    <TableCell>Correo</TableCell>
-                    <TableCell>CHID</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell align="right">Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedInterns.map((intern) => {
-                    const user = userMap.get(intern.id_user);
-                    const isSelected = selectedIntern?.id === intern.id;
-
-                    return (
-                      <TableRow key={intern.id} hover selected={isSelected}>
-                        <TableCell>{user ? `${user.first_name} ${user.last_name}` : 'Sin datos'}</TableCell>
-                        <TableCell>{user?.email ?? 'Sin correo'}</TableCell>
-                        <TableCell>{intern.chid}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={intern.status ? 'Activo' : 'Inactivo'}
-                            color={intern.status ? 'success' : 'default'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          <Button
-                            variant={isSelected ? 'contained' : 'outlined'}
-                            size="small"
-                            onClick={() => handleSelectIntern(intern)}
-                          >
-                            {isSelected ? 'Seleccionado' : 'Ver reportes'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {paginatedInterns.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        No hay becarios para mostrar.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <TablePagination
-              component="div"
-              rowsPerPageOptions={[5, 10, 25]}
-              count={filteredInterns.length}
-              rowsPerPage={internRowsPerPage}
-              page={internPage}
-              onPageChange={(_, page) => setInternPage(page)}
-              onRowsPerPageChange={(event) => {
-                setInternRowsPerPage(parseInt(event.target.value, 10));
-                setInternPage(0);
-              }}
-              labelRowsPerPage="Filas por pagina:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-            />
-          </>
-        )}
+        <ReportesInternsTable
+          interns={paginatedInterns}
+          userMap={userMap}
+          selectedInternId={selectedIntern?.id ?? null}
+          isLoading={isLoading}
+          page={internPage}
+          rowsPerPage={internRowsPerPage}
+          totalCount={filteredInterns.length}
+          onSelect={handleSelectIntern}
+          onPageChange={setInternPage}
+          onRowsPerPageChange={(value) => {
+            setInternRowsPerPage(value);
+            setInternPage(0);
+          }}
+        />
       </Paper>
 
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2, flexWrap: 'wrap' }}>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {selectedIntern ? `Reportes de ${selectedInternLabel}` : 'Todos los reportes'}
-            </Typography>
-            {selectedIntern && (
-              <Button size="small" onClick={handleClearSelection} sx={{ mt: 1 }}>
-                Limpiar seleccion
-              </Button>
-            )}
-          </Box>
-          <TextField
-            size="small"
-            placeholder="Buscar reportes por titulo, tipo o becario..."
-            value={reportSearch}
-            onChange={(event) => {
-              setReportSearch(event.target.value);
-              setReportPage(0);
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-            sx={{ minWidth: 280 }}
-          />
-        </Box>
-
-        {isLoadingReports ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        ) : (
-          <>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Titulo</TableCell>
-                    <TableCell>Tipo</TableCell>
-                    <TableCell>Becario</TableCell>
-                    <TableCell>Fecha</TableCell>
-                    <TableCell align="right">Archivo</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedReports.map((report) => {
-                    const hasArchive = Boolean(report.id_archive);
-                    const isArchiveLoading = activeArchiveId === report.id_archive;
-
-                    return (
-                      <TableRow key={report.id} hover>
-                        <TableCell>{report.title}</TableCell>
-                        <TableCell>{report.type ?? 'Sin tipo'}</TableCell>
-                        <TableCell>{getUserLabel(userMap, report.created_by)}</TableCell>
-                        <TableCell>{formatDate(report.created_at)}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title={hasArchive ? 'Ver archivo' : 'Sin archivo'}>
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenArchive(report, 'view')}
-                                disabled={!hasArchive || isArchiveLoading}
-                              >
-                                {isArchiveLoading ? <CircularProgress size={18} /> : <VisibilityIcon fontSize="small" />}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                          <Tooltip title={hasArchive ? 'Descargar archivo' : 'Sin archivo'}>
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenArchive(report, 'download')}
-                                disabled={!hasArchive || isArchiveLoading}
-                              >
-                                <DownloadIcon fontSize="small" />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {paginatedReports.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} align="center">
-                        No hay reportes para mostrar.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <TablePagination
-              component="div"
-              rowsPerPageOptions={[5, 10, 25]}
-              count={filteredReports.length}
-              rowsPerPage={reportRowsPerPage}
-              page={reportPage}
-              onPageChange={(_, page) => setReportPage(page)}
-              onRowsPerPageChange={(event) => {
-                setReportRowsPerPage(parseInt(event.target.value, 10));
-                setReportPage(0);
-              }}
-              labelRowsPerPage="Filas por pagina:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-            />
-          </>
-        )}
-      </Paper>
+      <ReportesReportsSection
+        selectedInternLabel={selectedInternLabel}
+        hasSelectedIntern={Boolean(selectedIntern)}
+        onClearSelection={handleClearSelection}
+        reportSearch={reportSearch}
+        onReportSearchChange={(value) => {
+          setReportSearch(value);
+          setReportPage(0);
+        }}
+        isLoadingReports={isLoadingReports}
+        reports={paginatedReports}
+        totalCount={filteredReports.length}
+        page={reportPage}
+        rowsPerPage={reportRowsPerPage}
+        onPageChange={setReportPage}
+        onRowsPerPageChange={(value) => {
+          setReportRowsPerPage(value);
+          setReportPage(0);
+        }}
+        userMap={userMap}
+        getUserLabel={getUserLabel}
+        formatDate={formatDate}
+        activeArchiveId={activeArchiveId}
+        onOpenArchive={handleOpenArchive}
+      />
     </Container>
   );
 };

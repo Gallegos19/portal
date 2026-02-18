@@ -113,7 +113,7 @@ const BecariosEditDialog: React.FC<BecariosEditDialogProps> = ({
               <MenuItem value="">Sin subproyecto</MenuItem>
               {subprojects.map((subproject) => (
                 <MenuItem key={subproject.id} value={subproject.id}>
-                  {subproject.name}
+                  {subproject.name_subproject}
                 </MenuItem>
               ))}
             </Select>
