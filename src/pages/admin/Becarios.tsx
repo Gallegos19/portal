@@ -20,14 +20,12 @@ import { regionService } from '../../services/api/region';
 import { socialFacilitatorService } from '../../services/api/socialFacilitator';
 import { subprojectService } from '../../services/api/subproject';
 import { userService } from '../../services/api/user';
-import {
-  BecariosCreateDialog,
-  BecariosDeleteDialog,
-  BecariosDetailPanel,
-  BecariosEditDialog,
-  BecariosFilters,
-  BecariosTable
-} from './becarios/index';
+import BecariosCreateDialog from './becarios/BecariosCreateDialog';
+import BecariosDeleteDialog from './becarios/BecariosDeleteDialog';
+import BecariosDetailPanel from './becarios/BecariosDetailPanel';
+import BecariosEditDialog from './becarios/BecariosEditDialog';
+import BecariosFilters from './becarios/BecariosFilters';
+import BecariosTable from './becarios/BecariosTable';
 import type { CreateInternForm, CreateUserForm } from './becarios/BecariosCreateDialog';
 
 const formatDate = (value?: string): string => {
@@ -101,6 +99,44 @@ const initialCreateInternForm: CreateInternForm = {
   end_date: ''
 };
 
+type CreateUserErrors = Partial<Record<keyof CreateUserForm, string>>;
+
+const validateEmail = (value: string): string | null => {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return 'El correo es obligatorio';
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(trimmedValue)) {
+    return 'Ingresa un correo valido';
+  }
+
+  return null;
+};
+
+const validatePassword = (value: string): string | null => {
+  if (!value) {
+    return 'La contrasena es obligatoria';
+  }
+
+  if (value.length < 8) {
+    return 'Debe tener al menos 8 caracteres';
+  }
+
+  const hasUppercase = /[A-Z]/.test(value);
+  const hasLowercase = /[a-z]/.test(value);
+  const hasNumber = /\d/.test(value);
+
+  if (!hasUppercase || !hasLowercase || !hasNumber) {
+    return 'Usa mayuscula, minuscula y numero';
+  }
+
+  return null;
+};
+
 const Becarios: React.FC = () => {
   const [interns, setInterns] = React.useState<Intern[]>([]);
   const [users, setUsers] = React.useState<UserApi[]>([]);
@@ -108,20 +144,26 @@ const Becarios: React.FC = () => {
   const [regions, setRegions] = React.useState<Region[]>([]);
   const [facilitators, setFacilitators] = React.useState<SocialFacilitator[]>([]);
   const [selectedIntern, setSelectedIntern] = React.useState<Intern | null>(null);
+
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [createStep, setCreateStep] = React.useState(0);
   const [createUserForm, setCreateUserForm] = React.useState<CreateUserForm>(initialCreateUserForm);
+  const [createUserErrors, setCreateUserErrors] = React.useState<CreateUserErrors>({});
   const [createInternForm, setCreateInternForm] = React.useState<CreateInternForm>(initialCreateInternForm);
   const [createdUserId, setCreatedUserId] = React.useState<string | null>(null);
+
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [editForm, setEditForm] = React.useState<Partial<Intern>>({});
+
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('todos');
   const [facilitatorFilter, setFacilitatorFilter] = React.useState('todos');
   const [regionFilter, setRegionFilter] = React.useState('todos');
   const [subprojectFilter, setSubprojectFilter] = React.useState('todos');
+
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const { toast, showToast, closeToast } = useToast();
@@ -169,15 +211,19 @@ const Becarios: React.FC = () => {
     const name = user ? `${user.first_name} ${user.last_name}` : '';
     const email = user?.email ?? '';
     const searchValue = searchTerm.toLowerCase();
+
     const matchesStatus =
       statusFilter === 'todos' ||
       (statusFilter === 'activo' && intern.status) ||
       (statusFilter === 'inactivo' && !intern.status);
+
     const matchesFacilitator =
       facilitatorFilter === 'todos' || intern.id_social_facilitator === facilitatorFilter;
+
     const internSubproject = intern.id_subproject ? subprojectMap.get(intern.id_subproject) : undefined;
     const matchesRegion =
       regionFilter === 'todos' || getSubprojectRegionId(internSubproject) === regionFilter;
+
     const matchesSubproject =
       subprojectFilter === 'todos' || intern.id_subproject === subprojectFilter;
 
@@ -261,14 +307,11 @@ const Becarios: React.FC = () => {
     }
   };
 
-  const handleEditIntern = (intern: Intern) => {
-    handleOpenEdit(intern);
-  };
-
   const resetCreateFlow = () => {
     setIsCreateOpen(false);
     setCreateStep(0);
     setCreateUserForm(initialCreateUserForm);
+    setCreateUserErrors({});
     setCreateInternForm(initialCreateInternForm);
     setCreatedUserId(null);
   };
@@ -291,6 +334,15 @@ const Becarios: React.FC = () => {
       ...current,
       [field]: value
     }));
+
+    if (createUserErrors[field]) {
+      setCreateUserErrors((current) => {
+        const nextErrors = { ...current };
+        delete nextErrors[field];
+
+        return nextErrors;
+      });
+    }
   };
 
   const handleCreateInternChange = (field: keyof CreateInternForm, value: string | boolean) => {
@@ -301,7 +353,34 @@ const Becarios: React.FC = () => {
   };
 
   const handleCreateNextStep = async () => {
-    if (!createUserForm.first_name || !createUserForm.last_name || !createUserForm.email || !createUserForm.password) {
+    if (createdUserId) {
+      setCreateStep(1);
+      return;
+    }
+
+    const nextErrors: CreateUserErrors = {};
+
+    if (!createUserForm.first_name.trim()) {
+      nextErrors.first_name = 'El nombre es obligatorio';
+    }
+
+    if (!createUserForm.last_name.trim()) {
+      nextErrors.last_name = 'Los apellidos son obligatorios';
+    }
+
+    const emailError = validateEmail(createUserForm.email);
+    if (emailError) {
+      nextErrors.email = emailError;
+    }
+
+    const passwordError = validatePassword(createUserForm.password);
+    if (passwordError) {
+      nextErrors.password = passwordError;
+    }
+
+    setCreateUserErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
       showToast('Completa los datos del usuario', 'warning');
       return;
     }
@@ -327,6 +406,10 @@ const Becarios: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditIntern = (intern: Intern) => {
+    handleOpenEdit(intern);
   };
 
   const handleRequestDeleteIntern = (intern: Intern) => {
@@ -375,28 +458,6 @@ const Becarios: React.FC = () => {
     }
   };
 
-  const handleConfirmDeleteIntern = async () => {
-    if (!internPendingDelete) {
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    try {
-      await internService.deleteById(internPendingDelete.id);
-      setSelectedIntern((current) => (current?.id === internPendingDelete.id ? null : current));
-      setInternPendingDelete(null);
-      showToast('Eliminado correctamente');
-      await loadData();
-    } catch (error) {
-      console.error('Error eliminando becario:', error);
-      setErrorMessage('No se pudo eliminar el becario.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleCreateIntern = async () => {
     if (!createdUserId) {
       showToast('Primero crea el usuario del becario', 'warning');
@@ -435,6 +496,28 @@ const Becarios: React.FC = () => {
     } catch (error) {
       console.error('Error creando becario:', error);
       setErrorMessage('No se pudo crear el becario.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmDeleteIntern = async () => {
+    if (!internPendingDelete) {
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      await internService.deleteById(internPendingDelete.id);
+      setSelectedIntern((current) => (current?.id === internPendingDelete.id ? null : current));
+      setInternPendingDelete(null);
+      showToast('Eliminado correctamente');
+      await loadData();
+    } catch (error) {
+      console.error('Error eliminando becario:', error);
+      setErrorMessage('No se pudo eliminar el becario.');
     } finally {
       setIsLoading(false);
     }
@@ -545,23 +628,12 @@ const Becarios: React.FC = () => {
         </Paper>
       </Box>
 
-      <BecariosEditDialog
-        open={isEditOpen}
-        isLoading={isLoading}
-        editForm={editForm}
-        subprojects={subprojects}
-        facilitators={facilitators}
-        facilitatorMap={facilitatorMap}
-        onClose={handleCloseEdit}
-        onChange={handleEditChange}
-        onSubmit={handleSubmitEdit}
-      />
-
       <BecariosCreateDialog
         open={isCreateOpen}
         activeStep={createStep}
         isLoading={isLoading}
         userForm={createUserForm}
+        userFormErrors={createUserErrors}
         internForm={createInternForm}
         subprojects={subprojects}
         facilitators={facilitators}
@@ -572,6 +644,18 @@ const Becarios: React.FC = () => {
         onNextStep={handleCreateNextStep}
         onBackStep={() => setCreateStep(0)}
         onSubmit={handleCreateIntern}
+      />
+
+      <BecariosEditDialog
+        open={isEditOpen}
+        isLoading={isLoading}
+        editForm={editForm}
+        subprojects={subprojects}
+        facilitators={facilitators}
+        facilitatorMap={facilitatorMap}
+        onClose={handleCloseEdit}
+        onChange={handleEditChange}
+        onSubmit={handleSubmitEdit}
       />
 
       <BecariosDeleteDialog

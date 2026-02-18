@@ -7,6 +7,8 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -16,6 +18,10 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import {
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon
+} from '@mui/icons-material';
 import type { SocialFacilitator, Subproject } from '../../../types/api';
 
 interface CreateUserForm {
@@ -46,6 +52,7 @@ interface BecariosCreateDialogProps {
   activeStep: number;
   isLoading: boolean;
   userForm: CreateUserForm;
+  userFormErrors: Partial<Record<keyof CreateUserForm, string>>;
   internForm: CreateInternForm;
   subprojects: Subproject[];
   facilitators: SocialFacilitator[];
@@ -65,6 +72,7 @@ const BecariosCreateDialog: React.FC<BecariosCreateDialogProps> = ({
   activeStep,
   isLoading,
   userForm,
+  userFormErrors,
   internForm,
   subprojects,
   facilitators,
@@ -76,6 +84,14 @@ const BecariosCreateDialog: React.FC<BecariosCreateDialogProps> = ({
   onBackStep,
   onSubmit
 }) => {
+  const [isPasswordVisible, setIsPasswordVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!open) {
+      setIsPasswordVisible(false);
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onClose={isLoading ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle>Nuevo becario</DialogTitle>
@@ -113,14 +129,31 @@ const BecariosCreateDialog: React.FC<BecariosCreateDialogProps> = ({
               label="Correo"
               value={userForm.email}
               onChange={(event) => onUserChange('email', event.target.value)}
+              error={Boolean(userFormErrors.email)}
+              helperText={userFormErrors.email}
               required
             />
             <TextField
               size="small"
-              type="password"
+              type={isPasswordVisible ? 'text' : 'password'}
               label="Contrasena"
               value={userForm.password}
               onChange={(event) => onUserChange('password', event.target.value)}
+              error={Boolean(userFormErrors.password)}
+              helperText={userFormErrors.password}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      onClick={() => setIsPasswordVisible((current) => !current)}
+                      aria-label={isPasswordVisible ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                    >
+                      {isPasswordVisible ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
               required
             />
           </Box>
