@@ -9,9 +9,11 @@ import {
   Typography
 } from '@mui/material';
 import {
+  Add as AddIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
 import type { Intern, Region, SocialFacilitator, Subproject, UserApi } from '../../types/api';
+import { USER_ROLES } from '../../utils/constants';
 import { useToast } from '../../hooks/useToast';
 import { internService } from '../../services/api/intern';
 import { regionService } from '../../services/api/region';
@@ -19,12 +21,14 @@ import { socialFacilitatorService } from '../../services/api/socialFacilitator';
 import { subprojectService } from '../../services/api/subproject';
 import { userService } from '../../services/api/user';
 import {
+  BecariosCreateDialog,
   BecariosDeleteDialog,
   BecariosDetailPanel,
   BecariosEditDialog,
   BecariosFilters,
   BecariosTable
 } from './becarios/index';
+import type { CreateInternForm, CreateUserForm } from './becarios/BecariosCreateDialog';
 
 const formatDate = (value?: string): string => {
   if (!value) {
@@ -74,6 +78,29 @@ const buildFacilitatorMap = (
   return new Map(entries);
 };
 
+const initialCreateUserForm: CreateUserForm = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  password: ''
+};
+
+const initialCreateInternForm: CreateInternForm = {
+  chid: '',
+  status: true,
+  address: '',
+  education_level: '',
+  career_name: '',
+  grade: '',
+  name_tutor: '',
+  service: '',
+  documentation: '',
+  id_subproject: '',
+  id_social_facilitator: '',
+  start_date: '',
+  end_date: ''
+};
+
 const Becarios: React.FC = () => {
   const [interns, setInterns] = React.useState<Intern[]>([]);
   const [users, setUsers] = React.useState<UserApi[]>([]);
@@ -81,6 +108,11 @@ const Becarios: React.FC = () => {
   const [regions, setRegions] = React.useState<Region[]>([]);
   const [facilitators, setFacilitators] = React.useState<SocialFacilitator[]>([]);
   const [selectedIntern, setSelectedIntern] = React.useState<Intern | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [createStep, setCreateStep] = React.useState(0);
+  const [createUserForm, setCreateUserForm] = React.useState<CreateUserForm>(initialCreateUserForm);
+  const [createInternForm, setCreateInternForm] = React.useState<CreateInternForm>(initialCreateInternForm);
+  const [createdUserId, setCreatedUserId] = React.useState<string | null>(null);
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [editForm, setEditForm] = React.useState<Partial<Intern>>({});
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -233,6 +265,70 @@ const Becarios: React.FC = () => {
     handleOpenEdit(intern);
   };
 
+  const resetCreateFlow = () => {
+    setIsCreateOpen(false);
+    setCreateStep(0);
+    setCreateUserForm(initialCreateUserForm);
+    setCreateInternForm(initialCreateInternForm);
+    setCreatedUserId(null);
+  };
+
+  const handleOpenCreate = () => {
+    resetCreateFlow();
+    setIsCreateOpen(true);
+  };
+
+  const handleCloseCreate = () => {
+    if (isLoading) {
+      return;
+    }
+
+    resetCreateFlow();
+  };
+
+  const handleCreateUserChange = (field: keyof CreateUserForm, value: string) => {
+    setCreateUserForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleCreateInternChange = (field: keyof CreateInternForm, value: string | boolean) => {
+    setCreateInternForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleCreateNextStep = async () => {
+    if (!createUserForm.first_name || !createUserForm.last_name || !createUserForm.email || !createUserForm.password) {
+      showToast('Completa los datos del usuario', 'warning');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const userResponse = await userService.create({
+        first_name: createUserForm.first_name.trim(),
+        last_name: createUserForm.last_name.trim(),
+        email: createUserForm.email.trim().toLowerCase(),
+        password: createUserForm.password,
+        role: USER_ROLES.BECARIO
+      });
+
+      setCreatedUserId(userResponse.data.id);
+      setCreateStep(1);
+      showToast('Usuario creado, completa datos del becario');
+    } catch (error) {
+      console.error('Error creando usuario para becario:', error);
+      setErrorMessage('No se pudo crear el usuario del becario.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRequestDeleteIntern = (intern: Intern) => {
     setInternPendingDelete(intern);
   };
@@ -301,6 +397,49 @@ const Becarios: React.FC = () => {
     }
   };
 
+  const handleCreateIntern = async () => {
+    if (!createdUserId) {
+      showToast('Primero crea el usuario del becario', 'warning');
+      return;
+    }
+
+    if (!createInternForm.chid.trim()) {
+      showToast('El CHID es obligatorio', 'warning');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      await internService.create({
+        chid: createInternForm.chid.trim(),
+        id_user: createdUserId,
+        status: createInternForm.status,
+        address: createInternForm.address || undefined,
+        education_level: createInternForm.education_level || undefined,
+        career_name: createInternForm.career_name || undefined,
+        grade: createInternForm.grade || undefined,
+        name_tutor: createInternForm.name_tutor || undefined,
+        service: createInternForm.service || undefined,
+        documentation: createInternForm.documentation || undefined,
+        id_subproject: createInternForm.id_subproject || undefined,
+        id_social_facilitator: createInternForm.id_social_facilitator || undefined,
+        start_date: createInternForm.start_date || undefined,
+        end_date: createInternForm.end_date || undefined
+      });
+
+      resetCreateFlow();
+      showToast('Becario creado correctamente');
+      await loadData();
+    } catch (error) {
+      console.error('Error creando becario:', error);
+      setErrorMessage('No se pudo crear el becario.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
@@ -312,14 +451,24 @@ const Becarios: React.FC = () => {
             Consulta y administra la informacion general de los becarios
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={loadData}
-          disabled={isLoading}
-        >
-          Actualizar
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={loadData}
+            disabled={isLoading}
+          >
+            Actualizar
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+            disabled={isLoading}
+          >
+            Nuevo becario
+          </Button>
+        </Box>
       </Box>
 
       {errorMessage && (
@@ -406,6 +555,23 @@ const Becarios: React.FC = () => {
         onClose={handleCloseEdit}
         onChange={handleEditChange}
         onSubmit={handleSubmitEdit}
+      />
+
+      <BecariosCreateDialog
+        open={isCreateOpen}
+        activeStep={createStep}
+        isLoading={isLoading}
+        userForm={createUserForm}
+        internForm={createInternForm}
+        subprojects={subprojects}
+        facilitators={facilitators}
+        facilitatorMap={facilitatorMap}
+        onClose={handleCloseCreate}
+        onUserChange={handleCreateUserChange}
+        onInternChange={handleCreateInternChange}
+        onNextStep={handleCreateNextStep}
+        onBackStep={() => setCreateStep(0)}
+        onSubmit={handleCreateIntern}
       />
 
       <BecariosDeleteDialog
