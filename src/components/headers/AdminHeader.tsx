@@ -27,7 +27,8 @@ import {
   AccountCircle,
   Menu as MenuIcon,
   Person,
-  Logout
+  Logout,
+  Event as EventIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -53,7 +54,7 @@ const AdminHeader: React.FC = () => {
     },
     { label: 'Regiones', icon: <Description />, path: '/admin/regiones', key: 'regiones' },
     { label: 'Subprojectos', icon: <CameraAlt />, path: '/admin/subprojectos', key: 'subprojectos' },
-    { label: 'Fotos', icon: <CameraAlt />, path: '/admin/fotos', key: 'fotos' },
+    { label: 'Eventos', icon: <EventIcon />, path: '/admin/eventos', key: 'eventos' },
     { label: 'Formatos', icon: <Description />, path: '/admin/formatos', key: 'formatos' },
   ];
 

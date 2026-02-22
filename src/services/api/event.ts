@@ -8,5 +8,6 @@ export const eventService = {
     httpClient.get<Event[]>(`/events/creator/${creatorId}`),
   create: (data: Omit<Event, 'id'>) => httpClient.post<Event>('/events', data),
   updateById: (id: string, data: Partial<Event>) =>
-    httpClient.put<Event>(`/events/${id}`, data)
+    httpClient.put<Event>(`/events/${id}`, data),
+  deleteById: (id: string) => httpClient.delete<Event>(`/events/${id}`)
 };

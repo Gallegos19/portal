@@ -118,6 +118,14 @@ export interface Photo extends BaseNamedEntity {
   id_archive: string;
 }
 
+export interface Archive extends BaseEntity {
+  file_name: string;
+  file_type?: string;
+  folder?: string;
+  uploaded_by: string;
+  upload_date?: string;
+}
+
 export interface Format extends BaseNamedEntity {
   id_archive: string;
 }
