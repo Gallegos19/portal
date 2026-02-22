@@ -41,9 +41,9 @@ interface BaseStatusEntity extends BaseEntity {
 }
 
 export const Status = {
-  '36b08c13-fa5a-4761-a040-811f6e571b11': "ACTIVO",
-  '4f58dd2d-e305-4f60-9f90-b65deb048a2b': "INACTIVO",
-  'dfbac22b-3f2b-4d7f-9dde-21159ebd8d06': "ELIMINADO",
+  '36b08c13-fa5a-4761-a040-811f6e571b11': "INACTIVO",
+  '4f58dd2d-e305-4f60-9f90-b65deb048a2b': "ELIMINADO",
+  'dfbac22b-3f2b-4d7f-9dde-21159ebd8d06': "ACTIVO",
 } as const;
 
 export type Status = typeof Status[keyof typeof Status];
@@ -132,6 +132,7 @@ export interface SchoolYear extends BaseEntity {
 export interface SocialFacilitator extends BaseStatusEntity {
   id_user: string;
   id_region: string;
+  status_id?: string;
 }
 
 export interface SuccessStory extends BaseNamedEntity, BaseAuditedEntity {
