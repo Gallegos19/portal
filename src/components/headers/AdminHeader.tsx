@@ -50,8 +50,9 @@ const AdminHeader: React.FC = () => {
       icon: <Group />,
       path: '/admin/facilitadores',
       key: 'facilitadores',
-      // subtitle: 'sociales'
     },
+    { label: 'Regiones', icon: <Description />, path: '/admin/regiones', key: 'regiones' },
+    { label: 'Subprojectos', icon: <CameraAlt />, path: '/admin/subprojectos', key: 'subprojectos' },
     { label: 'Fotos', icon: <CameraAlt />, path: '/admin/fotos', key: 'fotos' },
     { label: 'Formatos', icon: <Description />, path: '/admin/formatos', key: 'formatos' },
   ];

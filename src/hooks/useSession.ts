@@ -111,21 +111,9 @@ export const useSession = (): UseSessionReturn => {
         // Verificar si no ha expirado
         if (persistedSession.expiresAt && Date.now() < persistedSession.expiresAt) {
           memoryStorage = persistedSession;
-          sessionRef.current = peasync (data: Partial<SessionData>) => {
-    const newSession = {
-      ...memoryStorage,
-      ...data,
-    };
-
-    // Actualizar almacenamiento en memoria
-    memoryStorage = newSession;
-    sessionRef.current = newSession;
-    
-    // Actualizar estado local
-    setSessionState(newSession);
-
-    // Persistir de forma cifrada
-    await persistSession
+          sessionRef.current = persistedSession;
+          setSessionState(persistedSession);
+        } else {
           // Sesión expirada, limpiar
           removePersistedSession();
         }
