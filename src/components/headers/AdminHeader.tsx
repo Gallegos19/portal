@@ -12,8 +12,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  useMediaQuery,
-  useTheme,
   Menu,
   MenuItem,
   Divider
@@ -28,7 +26,8 @@ import {
   Menu as MenuIcon,
   Person,
   Logout,
-  Event as EventIcon
+  Event as EventIcon,
+  School as SchoolIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -38,12 +37,10 @@ const AdminHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const menuItems = [
+  const menuItems: Array<{ label: string; icon: React.ReactNode; path: string; key: string; subtitle?: string }> = [
     { label: 'Reportes', icon: <Assignment />, path: '/admin/reportes', key: 'reportes' },
     { label: 'Becarios', icon: <People />, path: '/admin/becarios', key: 'becarios' },
     {
@@ -55,6 +52,7 @@ const AdminHeader: React.FC = () => {
     { label: 'Regiones', icon: <Description />, path: '/admin/regiones', key: 'regiones' },
     { label: 'Subprojectos', icon: <CameraAlt />, path: '/admin/subprojectos', key: 'subprojectos' },
     { label: 'Eventos', icon: <EventIcon />, path: '/admin/eventos', key: 'eventos' },
+    { label: 'Capacitaciones', icon: <SchoolIcon />, path: '/admin/capacitaciones', key: 'capacitaciones' },
     { label: 'Formatos', icon: <Description />, path: '/admin/formatos', key: 'formatos' },
   ];
 

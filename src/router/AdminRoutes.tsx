@@ -10,6 +10,7 @@ import Facilitadores from '../pages/admin/Facilitadores';
 import Regiones from '../pages/admin/Regiones';
 import Subprojectos from '../pages/admin/Subprojectos';
 import Eventos from '../pages/admin/Eventos';
+import Capacitaciones from '../pages/admin/Capacitaciones';
 
 const AdminRoutes: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ const AdminRoutes: React.FC = () => {
         <Route path="regiones" element={<Regiones />} />
         <Route path="subprojectos" element={<Subprojectos />} />
         <Route path="eventos" element={<Eventos />} />
+        <Route path="capacitaciones" element={<Capacitaciones />} />
         <Route path="formatos" element={<Formatos />} />
         <Route path="mi-perfil" element={<MiPerfil />} />
       </Route>
