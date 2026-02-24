@@ -14,6 +14,30 @@ import {
   type TrainingFormValues,
 } from './capacitaciones-components';
 
+const extractYouTubeVideoId = (input: string): string | null => {
+  const value = input.trim();
+  if (!value) return null;
+
+  const idPattern = /^[a-zA-Z0-9_-]{11}$/;
+  if (idPattern.test(value)) {
+    return value;
+  }
+
+  if (value.includes('v=')) {
+    return value.split('v=')[1]?.split('&')[0] || null;
+  }
+
+  if (value.includes('youtu.be/')) {
+    return value.split('youtu.be/')[1]?.split('?')[0] || null;
+  }
+
+  if (value.includes('/embed/')) {
+    return value.split('/embed/')[1]?.split('?')[0] || null;
+  }
+
+  return null;
+};
+
 const emptyFormValues: TrainingFormValues = {
   title: '',
   description: '',
@@ -207,13 +231,10 @@ const Capacitaciones: React.FC = () => {
         loading={loading}
         onPlay={(training) => {
           const rawUrl = training.url || '';
-          const parsedVideoId = rawUrl.includes('v=')
-            ? rawUrl.split('v=')[1]?.split('&')[0]
-            : rawUrl.includes('youtu.be/')
-              ? rawUrl.split('youtu.be/')[1]?.split('?')[0]
-              : 'dQw4w9WgXcQ';
+          console.log('URL de capacitación:', rawUrl);
+          const parsedVideoId = extractYouTubeVideoId(rawUrl) || 'dQw4w9WgXcQ';
 
-          setVideoToPlay({ title: training.title, videoId: parsedVideoId || 'dQw4w9WgXcQ' });
+          setVideoToPlay({ title: training.title, videoId: parsedVideoId });
           setOpenVideoModal(true);
         }}
         onEdit={handleOpenEdit}
