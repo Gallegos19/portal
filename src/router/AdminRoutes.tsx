@@ -11,6 +11,7 @@ import Regiones from '../pages/admin/Regiones';
 import Subprojectos from '../pages/admin/Subprojectos';
 import Eventos from '../pages/admin/Eventos';
 import Capacitaciones from '../pages/admin/Capacitaciones';
+import HistoriasExito from '../pages/admin/HistoriasExito';
 
 const AdminRoutes: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ const AdminRoutes: React.FC = () => {
         <Route path="subprojectos" element={<Subprojectos />} />
         <Route path="eventos" element={<Eventos />} />
         <Route path="capacitaciones" element={<Capacitaciones />} />
+        <Route path="historias-exito" element={<HistoriasExito />} />
         <Route path="formatos" element={<Formatos />} />
         <Route path="mi-perfil" element={<MiPerfil />} />
       </Route>

@@ -27,7 +27,8 @@ import {
   Person,
   Logout,
   Event as EventIcon,
-  School as SchoolIcon
+  School as SchoolIcon,
+  EmojiEvents as EmojiEventsIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
@@ -53,6 +54,7 @@ const AdminHeader: React.FC = () => {
     { label: 'Subprojectos', icon: <CameraAlt />, path: '/admin/subprojectos', key: 'subprojectos' },
     { label: 'Eventos', icon: <EventIcon />, path: '/admin/eventos', key: 'eventos' },
     { label: 'Capacitaciones', icon: <SchoolIcon />, path: '/admin/capacitaciones', key: 'capacitaciones' },
+    { label: 'Historias Éxito', icon: <EmojiEventsIcon />, path: '/admin/historias-exito', key: 'historias-exito' },
     { label: 'Formatos', icon: <Description />, path: '/admin/formatos', key: 'formatos' },
   ];
 
@@ -111,7 +113,7 @@ const AdminHeader: React.FC = () => {
           },
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 } }}>
+        <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 }, gap: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box
               component="img"
@@ -139,11 +141,26 @@ const AdminHeader: React.FC = () => {
           </Box>
 
           {/* Desktop Menu */}
-          <Box sx={{
-            display: { xs: 'none', lg: 'flex' },
-            alignItems: 'center',
-            gap: { lg: 1, xl: 3 }
-          }}>
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              gap: 1,
+              flex: 1,
+              minWidth: 0,
+              mx: 1.5,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              whiteSpace: 'nowrap',
+              '&::-webkit-scrollbar': {
+                height: 4,
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#cbd5e1',
+                borderRadius: 999,
+              },
+            }}
+          >
             {menuItems.map((item) => (
               <Box key={item.key} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Button
@@ -154,8 +171,10 @@ const AdminHeader: React.FC = () => {
                     textTransform: 'none',
                     fontWeight: isActive(item.path) ? 600 : 400,
                     transition: 'all 0.2s ease',
-                    fontSize: { lg: '0.75rem', xl: '0.875rem' },
-                    px: { lg: 1, xl: 2 },
+                    fontSize: { md: '0.75rem', lg: '0.8rem', xl: '0.875rem' },
+                    px: { md: 0.75, lg: 1, xl: 1.5 },
+                    whiteSpace: 'nowrap',
+                    minWidth: 'max-content',
                     '&:hover': {
                       color: '#26C6DA',
                       bgcolor: 'rgba(38, 198, 218, 0.08)',
@@ -174,7 +193,7 @@ const AdminHeader: React.FC = () => {
           </Box>
 
           {/* Mobile & Tablet Menu */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
             <Avatar
               sx={{
                 bgcolor: '#26C6DA',
@@ -195,7 +214,7 @@ const AdminHeader: React.FC = () => {
 
             <IconButton
               sx={{
-                display: { xs: 'flex', lg: 'none' },
+                display: { xs: 'flex', md: 'none' },
                 color: '#64748b',
                 '&:hover': {
                   color: '#26C6DA',
@@ -216,7 +235,7 @@ const AdminHeader: React.FC = () => {
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         sx={{
-          display: { xs: 'block', lg: 'none' },
+          display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
             width: 280,
             bgcolor: 'white',

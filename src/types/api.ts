@@ -145,6 +145,7 @@ export interface SocialFacilitator extends BaseStatusEntity {
 
 export interface SuccessStory extends BaseNamedEntity, BaseAuditedEntity {
   id_photo?: string;
+  foto?: Photo;
 }
 
 export interface TrainingProgress extends BaseEntity {
