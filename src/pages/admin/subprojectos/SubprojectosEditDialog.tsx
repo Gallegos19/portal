@@ -39,8 +39,8 @@ const SubprojectosEditDialog: React.FC<SubprojectosEditDialogProps> = ({
       setFormData({
         name_subproject: subproject.name_subproject ?? '',
         id_region: subproject.id_region ?? subproject.region_id ?? '',
-        id_coordinator: subproject.coordinator_id ?? '',
-        id_social_facilitator: subproject.social_facilitator_id ?? '',
+        id_coordinator: subproject.id_coordinator ?? subproject.coordinator_id ?? '',
+        id_social_facilitator: subproject.id_social_facilitator ?? subproject.social_facilitator_id ?? '',
         status_id: subproject.status_id ?? '',
       });
       setErrors({});

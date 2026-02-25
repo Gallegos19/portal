@@ -90,7 +90,9 @@ export interface Subproject extends BaseEntity {
   id_region?: string;
   region_id?: string;
   status_id?: string;
+  id_coordinator?: string;
   coordinator_id?: string;
+  id_social_facilitator?: string;
   social_facilitator_id?: string;
   school_year_id?: string;
 }
