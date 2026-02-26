@@ -23,7 +23,7 @@ import {
   People,
   Assignment,
   School,
-  CameraAlt,
+  Event as EventIcon,
   Description,
   AccountCircle,
   Menu as MenuIcon,
@@ -65,10 +65,10 @@ const FacilitadorHeader: React.FC = () => {
       key: "capacitacion",
     },
     {
-      label: "Fotos",
-      icon: <CameraAlt />,
-      path: "/facilitador/fotos",
-      key: "fotos",
+      label: "Eventos",
+      icon: <EventIcon />,
+      path: "/facilitador/eventos",
+      key: "eventos",
     },
     {
       label: "Formatos",

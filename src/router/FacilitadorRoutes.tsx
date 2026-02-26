@@ -6,7 +6,7 @@ import MiPerfil from '../pages/common/MiPerfil';
 import Becarios from '../pages/facilitador/Becarios';
 import Reportes from '../pages/facilitador/Reportes';
 import Capacitacion from '../pages/facilitador/Capacitacion';
-import Fotos from '../pages/facilitador/Fotos';
+import Eventos from '../pages/facilitador/Eventos';
 import Formatos from '../pages/facilitador/Formatos';
 
 const FacilitadorRoutes: React.FC = () => {
@@ -17,7 +17,8 @@ const FacilitadorRoutes: React.FC = () => {
         <Route path="becarios" element={<Becarios />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="capacitacion" element={<Capacitacion />} />
-        <Route path="fotos" element={<Fotos />} />
+        <Route path="eventos" element={<Eventos />} />
+        <Route path="fotos" element={<Navigate to="/facilitador/eventos" replace />} />
         <Route path="formatos" element={<Formatos />} />
         <Route path="mi-perfil" element={<MiPerfil />} />
       </Route>
