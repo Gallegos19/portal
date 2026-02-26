@@ -8,6 +8,7 @@ import Reportes from '../pages/facilitador/Reportes';
 import Capacitacion from '../pages/facilitador/Capacitacion';
 import Eventos from '../pages/facilitador/Eventos';
 import Formatos from '../pages/facilitador/Formatos';
+import HistoriasExito from '../pages/facilitador/HistoriasExito';
 
 const FacilitadorRoutes: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const FacilitadorRoutes: React.FC = () => {
         <Route path="capacitacion" element={<Capacitacion />} />
         <Route path="eventos" element={<Eventos />} />
         <Route path="fotos" element={<Navigate to="/facilitador/eventos" replace />} />
+        <Route path="historias-exito" element={<HistoriasExito />} />
         <Route path="formatos" element={<Formatos />} />
         <Route path="mi-perfil" element={<MiPerfil />} />
       </Route>

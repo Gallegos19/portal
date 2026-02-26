@@ -24,6 +24,7 @@ import {
   Assignment,
   School,
   Event as EventIcon,
+  EmojiEvents as EmojiEventsIcon,
   Description,
   AccountCircle,
   Menu as MenuIcon,
@@ -69,6 +70,12 @@ const FacilitadorHeader: React.FC = () => {
       icon: <EventIcon />,
       path: "/facilitador/eventos",
       key: "eventos",
+    },
+    {
+      label: "Historias Éxito",
+      icon: <EmojiEventsIcon />,
+      path: "/facilitador/historias-exito",
+      key: "historias-exito",
     },
     {
       label: "Formatos",
