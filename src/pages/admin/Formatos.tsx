@@ -68,7 +68,17 @@ const initialEditState: FormularioEdicion = {
   rolDestino: 'Becario',
 };
 
-const Formatos: React.FC = () => {
+interface FormatosProps {
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+}
+
+const Formatos: React.FC<FormatosProps> = ({
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
+}) => {
   const { showToast } = useToast();
   const { user } = useAuthStore();
 
@@ -129,6 +139,8 @@ const Formatos: React.FC = () => {
   };
 
   const handleOpenEditModal = (format: Format) => {
+    if (!canEdit) return;
+
     setSelectedFormat(format);
     setEditData({
       tipoFormato: format.title,
@@ -145,6 +157,8 @@ const Formatos: React.FC = () => {
   };
 
   const handleOpenDeleteDialog = (format: Format) => {
+    if (!canDelete) return;
+
     setSelectedFormat(format);
     setOpenDeleteDialog(true);
   };
@@ -351,12 +365,16 @@ const Formatos: React.FC = () => {
             Formatos
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Administra y descarga los formatos disponibles
+            {canCreate
+              ? 'Administra y descarga los formatos disponibles'
+              : 'Consulta y descarga los formatos disponibles'}
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<CloudUploadIcon />} onClick={handleOpenModal}>
-          Subir Formato
-        </Button>
+        {canCreate && (
+          <Button variant="contained" startIcon={<CloudUploadIcon />} onClick={handleOpenModal}>
+            Subir Formato
+          </Button>
+        )}
       </Box>
 
       {errorMessage && (
@@ -398,7 +416,7 @@ const Formatos: React.FC = () => {
         </FormControl>
       </Box>
 
-      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
+      <Dialog open={canCreate && openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">Subir Nuevo Formato</Typography>
@@ -489,7 +507,7 @@ const Formatos: React.FC = () => {
         </form>
       </Dialog>
 
-      <Dialog open={openEditModal} onClose={handleCloseEditModal} maxWidth="sm" fullWidth>
+      <Dialog open={canEdit && openEditModal} onClose={handleCloseEditModal} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">Editar Formato</Typography>
@@ -540,7 +558,7 @@ const Formatos: React.FC = () => {
         </form>
       </Dialog>
 
-      <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog} maxWidth="xs" fullWidth>
+      <Dialog open={canDelete && openDeleteDialog} onClose={handleCloseDeleteDialog} maxWidth="xs" fullWidth>
         <DialogTitle>Eliminar formato</DialogTitle>
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary">
@@ -614,14 +632,16 @@ const Formatos: React.FC = () => {
                         </TableCell>
 
                         <TableCell align="right">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleOpenEditModal(format)}
-                            title="Editar"
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                          {canEdit && (
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleOpenEditModal(format)}
+                              title="Editar"
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          )}
 
                           <IconButton
                             size="small"
@@ -637,15 +657,17 @@ const Formatos: React.FC = () => {
                             )}
                           </IconButton>
 
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleOpenDeleteDialog(format)}
-                            title="Eliminar"
-                            disabled={activeDeleteId === format.id}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                          {canDelete && (
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleOpenDeleteDialog(format)}
+                              title="Eliminar"
+                              disabled={activeDeleteId === format.id}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
