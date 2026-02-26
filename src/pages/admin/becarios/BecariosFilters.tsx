@@ -28,6 +28,8 @@ interface BecariosFiltersProps {
   regions: Region[];
   subprojects: Subproject[];
   totalCount: number;
+  showFacilitatorFilter?: boolean;
+  showRegionFilter?: boolean;
 }
 
 const BecariosFilters: React.FC<BecariosFiltersProps> = ({
@@ -45,7 +47,9 @@ const BecariosFilters: React.FC<BecariosFiltersProps> = ({
   facilitatorMap,
   regions,
   subprojects,
-  totalCount
+  totalCount,
+  showFacilitatorFilter = true,
+  showRegionFilter = true
 }) => {
   return (
     <>
@@ -88,37 +92,41 @@ const BecariosFilters: React.FC<BecariosFiltersProps> = ({
           </Select>
         </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 220 }}>
-          <InputLabel>Facilitador</InputLabel>
-          <Select
-            value={facilitatorFilter}
-            label="Facilitador"
-            onChange={(event) => onFacilitatorFilterChange(event.target.value)}
-          >
-            <MenuItem value="todos">Todos</MenuItem>
-            {facilitators.map((facilitator) => (
-              <MenuItem key={facilitator.id} value={facilitator.id}>
-                {facilitatorMap.get(facilitator.id) ?? 'Sin nombre'}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {showFacilitatorFilter && (
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Facilitador</InputLabel>
+            <Select
+              value={facilitatorFilter}
+              label="Facilitador"
+              onChange={(event) => onFacilitatorFilterChange(event.target.value)}
+            >
+              <MenuItem value="todos">Todos</MenuItem>
+              {facilitators.map((facilitator) => (
+                <MenuItem key={facilitator.id} value={facilitator.id}>
+                  {facilitatorMap.get(facilitator.id) ?? 'Sin nombre'}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
 
-        <FormControl size="small" sx={{ minWidth: 220 }}>
-          <InputLabel>Region</InputLabel>
-          <Select
-            value={regionFilter}
-            label="Region"
-            onChange={(event) => onRegionFilterChange(event.target.value)}
-          >
-            <MenuItem value="todos">Todas</MenuItem>
-            {regions.map((region) => (
-              <MenuItem key={region.id} value={region.id}>
-                {region.name_region ?? region.name ?? 'Sin nombre'}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        {showRegionFilter && (
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Region</InputLabel>
+            <Select
+              value={regionFilter}
+              label="Region"
+              onChange={(event) => onRegionFilterChange(event.target.value)}
+            >
+              <MenuItem value="todos">Todas</MenuItem>
+              {regions.map((region) => (
+                <MenuItem key={region.id} value={region.id}>
+                  {region.name_region ?? region.name ?? 'Sin nombre'}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
 
         <FormControl size="small" sx={{ minWidth: 220 }}>
           <InputLabel>Subproyecto</InputLabel>
