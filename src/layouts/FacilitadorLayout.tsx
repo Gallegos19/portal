@@ -6,11 +6,11 @@ import { Footer } from '../components/common';
 
 const FacilitadorLayout: React.FC = () => {
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5', display: 'flex', flexDirection: 'column' }}>
       <FacilitadorHeader />
       
       {/* Contenido principal */}
-      <Box component="main">
+      <Box component="main" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Suspense fallback={
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
