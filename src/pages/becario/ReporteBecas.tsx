@@ -1,16 +1,14 @@
-import { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
+  CircularProgress,
   TextField,
   Typography,
   InputAdornment,
   Paper,
-  Grid,
   IconButton,
-  Divider,
-  TextareaAutosize,
-  styled,
   Tooltip
 } from '@mui/material';
 import {
@@ -20,15 +18,33 @@ import {
   Message as MessageIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  Description as DescriptionIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
+import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../hooks/useToast';
+import type { Report } from '../../types/api';
+import { archiveService } from '../../services/api/archive';
+import { reportService } from '../../services/api/report';
+import { buildExcelFile } from '../../utils/reportExcel';
 
 
 const ReporteBecas = () => {
+  const { user } = useAuthStore();
+  const { showToast } = useToast();
+  const comprobantesInputRef = useRef<HTMLInputElement | null>(null);
   const [gastos, setGastos] = useState([
     { id: 1, fecha: '', emisor: '', concepto: '', totalCompra: '', totalGastos: '', nuevoSaldo: '' },
     { id: 2, fecha: '', emisor: '', concepto: '', totalCompra: '', totalGastos: '', nuevoSaldo: '' }
   ]);
+  const [comentarios, setComentarios] = useState('');
+  const [comprobantes, setComprobantes] = useState<File[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
 
   const agregarGasto = () => {
     const nuevoId = gastos.length > 0 ? Math.max(...gastos.map(g => g.id)) + 1 : 1;
@@ -53,6 +69,137 @@ const ReporteBecas = () => {
     setGastos(gastos.map(gasto => 
       gasto.id === id ? { ...gasto, [campo]: valor } : gasto
     ));
+  };
+
+  const loadHistory = React.useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoadingHistory(true);
+      setHistoryError(null);
+      const response = await reportService.getByCreatorId(user.id);
+      const all = response.data || [];
+      setReports(all.filter((report) => (report.type || '').toUpperCase() === 'BECAS'));
+    } catch (error) {
+      console.error('Error cargando historial de reportes de becas:', error);
+      setHistoryError('No se pudieron cargar los reportes anteriores.');
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [user?.id]);
+
+  React.useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  const handleComprobantesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
+    setComprobantes((prev) => [...prev, ...Array.from(event.target.files)]);
+    event.target.value = '';
+  };
+
+  const handleOpenComprobantesPicker = () => {
+    comprobantesInputRef.current?.click();
+  };
+
+  const handleRemoveComprobante = (index: number) => {
+    setComprobantes((prev) => prev.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const handleSaveReport = async () => {
+    if (!user?.id) {
+      showToast('No se pudo identificar al usuario autenticado.', 'error');
+      return;
+    }
+
+    const hasRows = gastos.some((item) => item.fecha || item.emisor || item.concepto || item.totalCompra || item.totalGastos);
+    if (!hasRows) {
+      showToast('Completa al menos un registro de gasto.', 'warning');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const reportTitle = `Reporte de Becas - ${new Date().toLocaleDateString('es-MX')}`;
+
+      const excelFile = await buildExcelFile({
+        sheetName: 'Becas',
+        fileName: `${reportTitle.replace(/\s+/g, '_')}.xlsx`,
+        evidences: comprobantes,
+        metadata: {
+          Titulo: reportTitle,
+          Usuario: user.email,
+          Fecha: new Date().toLocaleString('es-MX'),
+          Comentarios: comentarios,
+          ComprobantesAdjuntos: comprobantes.length,
+        },
+        rows: gastos.map((item) => ({
+          FechaCompra: item.fecha,
+          Emisor: item.emisor,
+          Concepto: item.concepto,
+          TotalCompra: item.totalCompra,
+          TotalGastos: item.totalGastos,
+          NuevoSaldo: item.nuevoSaldo,
+        })),
+      });
+
+      const archiveResponse = await archiveService.uploadFile(
+        excelFile,
+        user.id,
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'reportes/becas'
+      );
+
+      await reportService.create({
+        title: reportTitle,
+        description: comentarios || 'Reporte bimestral de becas y materiales',
+        type: 'BECAS',
+        id_archive: archiveResponse.data.id,
+      });
+
+      showToast('Reporte de becas exportado y guardado correctamente.', 'success');
+      setComentarios('');
+      setComprobantes([]);
+      await loadHistory();
+    } catch (error) {
+      console.error('Error guardando reporte de becas:', error);
+      showToast('No se pudo guardar el reporte de becas.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownloadReport = async (report: Report) => {
+    if (!report.id_archive) {
+      showToast('Este reporte no tiene archivo asociado.', 'warning');
+      return;
+    }
+
+    try {
+      const response = await archiveService.getSignedUrl(report.id_archive, 300);
+      window.open(response.data.signed_url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error descargando reporte:', error);
+      showToast('No se pudo descargar el reporte.', 'error');
+    }
+  };
+
+  const handleDeleteReport = async (report: Report) => {
+    const confirmed = window.confirm(`¿Deseas eliminar el reporte "${report.title}"?`);
+    if (!confirmed) return;
+
+    try {
+      setDeletingReportId(report.id);
+      await reportService.deleteById(report.id);
+      showToast('Reporte eliminado correctamente.', 'success');
+      await loadHistory();
+    } catch (error) {
+      console.error('Error eliminando reporte:', error);
+      showToast('No se pudo eliminar el reporte.', 'error');
+    } finally {
+      setDeletingReportId(null);
+    }
   };
 
   return (
@@ -237,6 +384,8 @@ const ReporteBecas = () => {
                 fullWidth
                 variant="outlined"
                 placeholder="Agrega comentarios adicionales sobre los gastos realizados..."
+                value={comentarios}
+                onChange={(event) => setComentarios(event.target.value)}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end" sx={{ position: 'absolute', right: 8, top: 8 }}>
@@ -264,21 +413,44 @@ const ReporteBecas = () => {
                     cursor: 'pointer'
                   }
                 }}
+                onClick={handleOpenComprobantesPicker}
               >
                 <AttachFileIcon color="action" sx={{ mb: 1 }} />
                 <Box>
                   <Typography component="span" color="primary" sx={{ fontWeight: 'medium', '&:hover': { textDecoration: 'underline' } }}>
                     Subir comprobantes
-                    <input type="file" hidden multiple accept="image/*,.pdf" />
                   </Typography>
                   <Typography component="span" variant="body2" color="text.secondary">
                     {' '}o arrastra y suelta aquí
                   </Typography>
                 </Box>
+                <input
+                  ref={comprobantesInputRef}
+                  type="file"
+                  hidden
+                  multiple
+                  accept="image/*,.pdf"
+                  onChange={handleComprobantesChange}
+                />
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
                   PNG, JPG, PDF hasta 10MB
                 </Typography>
               </Paper>
+
+              {comprobantes.length > 0 && (
+                <Box sx={{ mt: 1.5 }}>
+                  {comprobantes.map((file, index) => (
+                    <Paper key={`${file.name}-${index}`} variant="outlined" sx={{ p: 1, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" noWrap sx={{ mr: 2 }}>
+                        {file.name}
+                      </Typography>
+                      <IconButton size="small" color="error" onClick={() => handleRemoveComprobante(index)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Paper>
+                  ))}
+                </Box>
+              )}
             </Box>
 
             {/* Botones de acción */}
@@ -296,11 +468,64 @@ const ReporteBecas = () => {
                 color="primary"
                 startIcon={<SaveIcon />}
                 sx={{ textTransform: 'none' }}
+                onClick={handleSaveReport}
+                disabled={saving}
               >
-                Guardar
+                {saving ? 'Procesando...' : 'Guardar'}
               </Button>
             </Box>
           </Box>
+        </Paper>
+
+        <Paper elevation={2}>
+          <Box sx={{ px: 3, py: 2, bgcolor: 'grey.50', borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+              Reportes anteriores
+            </Typography>
+          </Box>
+
+          {historyError && (
+            <Alert severity="error" sx={{ m: 2 }}>
+              {historyError}
+            </Alert>
+          )}
+
+          {loadingHistory ? (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <CircularProgress />
+            </Box>
+          ) : reports.length === 0 ? (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <DescriptionIcon color="disabled" sx={{ fontSize: 42, mb: 1 }} />
+              <Typography color="text.secondary">No hay reportes de becas registrados aún.</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ p: 2 }}>
+              {reports.map((report) => (
+                <Paper key={report.id} variant="outlined" sx={{ p: 1.5, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{report.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(report.created_at).toLocaleString('es-MX')}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button startIcon={<DownloadIcon />} onClick={() => handleDownloadReport(report)}>
+                      Descargar
+                    </Button>
+                    <Button
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      onClick={() => handleDeleteReport(report)}
+                      disabled={deletingReportId === report.id}
+                    >
+                      Eliminar
+                    </Button>
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          )}
         </Paper>
       </Box>
     </Box>
