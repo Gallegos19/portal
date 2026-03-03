@@ -23,8 +23,8 @@ const BecarioRoutes: React.FC = () => {
         <Route path="becas" element={<ReporteBecas />} />
         <Route path="perfil" element={<MiPerfil />} />
         <Route path="mi-perfil" element={<MiPerfil />} />
-        <Route path="documentos-academicos" element={<Documentos />} />  
-        <Route path="documentos-personales" element={<DocumentosAcademicos />} />  
+        <Route path="documentos-personales" element={<Documentos />} />
+        <Route path="documentos-academicos" element={<DocumentosAcademicos />} />
         {/* <Route path="documentos">
           <Route index element={<Documentos />} />
           <Route path="personales" element={<Documentos />} />

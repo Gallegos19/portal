@@ -103,10 +103,13 @@ export interface Coordinator extends BaseStatusEntity {
 }
 
 export interface Document extends BaseNamedEntity {
-  internId: string;
+  id_intern?: string;
   id_archive: string;
+  document_type?: 'personal' | 'academico';
+  created_at?: string;
   school_year_id?: string;
   status_id?: string;
+  internId?: string;
 }
 
 export interface EventPhoto extends BaseEntity {
