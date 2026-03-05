@@ -8,6 +8,10 @@ import {
   Typography,
   InputAdornment,
   Paper,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
   IconButton,
   Tooltip
 } from '@mui/material';
@@ -25,18 +29,61 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
 import type { Report } from '../../types/api';
+import { Periodo } from '../../types/types';
 import { archiveService } from '../../services/api/archive';
 import { reportService } from '../../services/api/report';
-import { buildExcelFile } from '../../utils/reportExcel';
+import { internService } from '../../services/api/intern';
+import { subprojectService } from '../../services/api/subproject';
+import { buildBecasExcelFile } from '../../utils/reportExcel';
+
+type GastoItem = {
+  id: number;
+  fecha: string;
+  emisor: string;
+  concepto: string;
+  montoCompra: string;
+  observacion: string;
+};
+
+const createEmptyGasto = (id: number): GastoItem => ({
+  id,
+  fecha: '',
+  emisor: '',
+  concepto: '',
+  montoCompra: '',
+  observacion: '',
+});
+
+const toAmount = (value: string): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
 
 const ReporteBecas = () => {
   const { user } = useAuthStore();
   const { showToast } = useToast();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const schoolYearStart = currentMonth >= 6 ? currentYear : currentYear - 1;
+  const periodosDisponibles = Object.values(Periodo).map((nombrePeriodo, index) => {
+    const isCurrentSchoolYearEndPeriod = index >= 2;
+    const periodYear = isCurrentSchoolYearEndPeriod ? schoolYearStart + 1 : schoolYearStart;
+    return `${nombrePeriodo} ${periodYear}`;
+  });
   const comprobantesInputRef = useRef<HTMLInputElement | null>(null);
-  const [gastos, setGastos] = useState([
-    { id: 1, fecha: '', emisor: '', concepto: '', totalCompra: '', totalGastos: '', nuevoSaldo: '' },
-    { id: 2, fecha: '', emisor: '', concepto: '', totalCompra: '', totalGastos: '', nuevoSaldo: '' }
+  const [periodo, setPeriodo] = useState('');
+  const [nombreBecario, setNombreBecario] = useState('');
+  const [chid, setChid] = useState('');
+  const [subproyecto, setSubproyecto] = useState('');
+  const [numeroTarjeta, setNumeroTarjeta] = useState('');
+  const [saldoMesAnterior, setSaldoMesAnterior] = useState('0');
+  const [depositoBeca, setDepositoBeca] = useState('0');
+  const [depositoMateriales, setDepositoMateriales] = useState('0');
+  const [gastos, setGastos] = useState<GastoItem[]>([
+    createEmptyGasto(1),
+    createEmptyGasto(2),
   ]);
   const [comentarios, setComentarios] = useState('');
   const [comprobantes, setComprobantes] = useState<File[]>([]);
@@ -48,15 +95,7 @@ const ReporteBecas = () => {
 
   const agregarGasto = () => {
     const nuevoId = gastos.length > 0 ? Math.max(...gastos.map(g => g.id)) + 1 : 1;
-    setGastos([...gastos, { 
-      id: nuevoId, 
-      fecha: '', 
-      emisor: '', 
-      concepto: '', 
-      totalCompra: '', 
-      totalGastos: '', 
-      nuevoSaldo: '' 
-    }]);
+    setGastos([...gastos, createEmptyGasto(nuevoId)]);
   };
 
   const eliminarGasto = (id: number) => {
@@ -65,10 +104,8 @@ const ReporteBecas = () => {
     }
   };
 
-  const actualizarGasto = (id: any, campo: any, valor: any) => {
-    setGastos(gastos.map(gasto => 
-      gasto.id === id ? { ...gasto, [campo]: valor } : gasto
-    ));
+  const actualizarGasto = (id: number, campo: keyof GastoItem, valor: string) => {
+    setGastos(gastos.map(gasto => (gasto.id === id ? { ...gasto, [campo]: valor } : gasto)));
   };
 
   const loadHistory = React.useCallback(async () => {
@@ -92,6 +129,37 @@ const ReporteBecas = () => {
     loadHistory();
   }, [loadHistory]);
 
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    if (fullName) {
+      setNombreBecario(fullName);
+    }
+
+    const loadInternContext = async () => {
+      try {
+        const internResponse = await internService.getByUserId(user.id);
+        const intern = internResponse.data;
+        if (intern?.chid) {
+          setChid(intern.chid);
+        }
+
+        if (intern?.id_subproject) {
+          const subprojectResponse = await subprojectService.getById(intern.id_subproject);
+          const subprojectData = subprojectResponse.data;
+          if (subprojectData?.name_subproject) {
+            setSubproyecto(subprojectData.name_subproject);
+          }
+        }
+      } catch (error) {
+        console.error('No se pudo cargar contexto del becario para el reporte de becas:', error);
+      }
+    };
+
+    loadInternContext();
+  }, [user?.id, user?.firstName, user?.lastName]);
+
   const handleComprobantesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
     setComprobantes((prev) => [...prev, ...Array.from(event.target.files)]);
@@ -112,7 +180,17 @@ const ReporteBecas = () => {
       return;
     }
 
-    const hasRows = gastos.some((item) => item.fecha || item.emisor || item.concepto || item.totalCompra || item.totalGastos);
+    if (!periodo.trim()) {
+      showToast('Selecciona el período del reporte.', 'warning');
+      return;
+    }
+
+    if (!nombreBecario.trim() || !chid.trim() || !subproyecto.trim()) {
+      showToast('Completa nombre, CHID y subproyecto para generar el formato completo.', 'warning');
+      return;
+    }
+
+    const hasRows = gastos.some((item) => item.fecha || item.emisor || item.concepto || item.montoCompra || item.observacion);
     if (!hasRows) {
       showToast('Completa al menos un registro de gasto.', 'warning');
       return;
@@ -121,27 +199,28 @@ const ReporteBecas = () => {
     try {
       setSaving(true);
 
-      const reportTitle = `Reporte de Becas - ${new Date().toLocaleDateString('es-MX')}`;
+      const reportTitle = `Comprobación de Becas y Materiales - ${periodo}`;
+      const comentariosResumen = comentarios.trim().replace(/\s+/g, ' ').slice(0, 180);
 
-      const excelFile = await buildExcelFile({
-        sheetName: 'Becas',
+      const excelFile = await buildBecasExcelFile({
         fileName: `${reportTitle.replace(/\s+/g, '_')}.xlsx`,
-        evidences: comprobantes,
-        metadata: {
-          Titulo: reportTitle,
-          Usuario: user.email,
-          Fecha: new Date().toLocaleString('es-MX'),
-          Comentarios: comentarios,
-          ComprobantesAdjuntos: comprobantes.length,
-        },
-        rows: gastos.map((item) => ({
-          FechaCompra: item.fecha,
-          Emisor: item.emisor,
-          Concepto: item.concepto,
-          TotalCompra: item.totalCompra,
-          TotalGastos: item.totalGastos,
-          NuevoSaldo: item.nuevoSaldo,
+        periodo,
+        nombreBecario,
+        chid,
+        subproyecto,
+        numeroTarjeta,
+        saldoMesAnterior,
+        depositoBeca,
+        depositoMateriales,
+        comentarios,
+        gastos: gastos.map((item) => ({
+          fecha: item.fecha,
+          emisor: item.emisor,
+          concepto: item.concepto,
+          montoCompra: item.montoCompra,
+          observacion: item.observacion,
         })),
+        evidences: comprobantes,
       });
 
       const archiveResponse = await archiveService.uploadFile(
@@ -153,12 +232,18 @@ const ReporteBecas = () => {
 
       await reportService.create({
         title: reportTitle,
-        description: comentarios || 'Reporte bimestral de becas y materiales',
+        description: `Periodo: ${periodo}. CHID: ${chid}. ${comentariosResumen || 'Sin comentarios adicionales.'}`,
         type: 'BECAS',
         id_archive: archiveResponse.data.id,
       });
 
       showToast('Reporte de becas exportado y guardado correctamente.', 'success');
+      setPeriodo('');
+      setNumeroTarjeta('');
+      setSaldoMesAnterior('0');
+      setDepositoBeca('0');
+      setDepositoMateriales('0');
+      setGastos([createEmptyGasto(1), createEmptyGasto(2)]);
       setComentarios('');
       setComprobantes([]);
       await loadHistory();
@@ -224,6 +309,85 @@ const ReporteBecas = () => {
           </Box>
           
           <Box sx={{ p: 3 }}>
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel id="periodo-becas-label">Período de reporte</InputLabel>
+              <Select
+                labelId="periodo-becas-label"
+                value={periodo}
+                label="Período de reporte"
+                onChange={(event) => setPeriodo(event.target.value)}
+                required
+              >
+                <MenuItem value="">Selecciona el período</MenuItem>
+                {periodosDisponibles.map((item) => (
+                  <MenuItem key={item} value={item}>
+                    {item}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box
+              sx={{
+                mb: 3,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+                gap: 2,
+              }}
+            >
+              <TextField
+                size="small"
+                label="Nombre del/la becario(a)"
+                value={nombreBecario}
+                onChange={(event) => setNombreBecario(event.target.value)}
+                required
+              />
+              <TextField
+                size="small"
+                label="CHID"
+                value={chid}
+                onChange={(event) => setChid(event.target.value)}
+                required
+              />
+              <TextField
+                size="small"
+                label="Subproyecto"
+                value={subproyecto}
+                onChange={(event) => setSubproyecto(event.target.value)}
+                required
+              />
+              <TextField
+                size="small"
+                label="N° de tarjeta"
+                value={numeroTarjeta}
+                onChange={(event) => setNumeroTarjeta(event.target.value)}
+              />
+              <TextField
+                type="number"
+                size="small"
+                label="Saldo del mes anterior"
+                value={saldoMesAnterior}
+                onChange={(event) => setSaldoMesAnterior(event.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              />
+              <TextField
+                type="number"
+                size="small"
+                label="Depósito de beca"
+                value={depositoBeca}
+                onChange={(event) => setDepositoBeca(event.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              />
+              <TextField
+                type="number"
+                size="small"
+                label="Depósito de materiales"
+                value={depositoMateriales}
+                onChange={(event) => setDepositoMateriales(event.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+              />
+            </Box>
+
             {/* Grid de gastos */}
             <Box sx={{ '& > *:not(:last-child)': { mb: 2 } }}>
               {gastos.map((gasto) => (
@@ -234,7 +398,7 @@ const ReporteBecas = () => {
                     p: 2, 
                     bgcolor: 'background.paper',
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', md: 'repeat(6, 1fr)' },
+                    gridTemplateColumns: { xs: '1fr', md: '2fr 2fr 2fr 1.5fr 2fr auto' },
                     gap: 2
                   }}
                 >
@@ -287,17 +451,17 @@ const ReporteBecas = () => {
                     />
                   </Box>
 
-                  {/* Total de la compra */}
+                  {/* Monto total de compra */}
                   <Box>
                     <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                      Total de la compra
+                      Monto (total de la compra)
                     </Typography>
                     <TextField
                       type="number"
                       size="small"
                       fullWidth
-                      value={gasto.totalCompra}
-                      onChange={(e) => actualizarGasto(gasto.id, 'totalCompra', e.target.value)}
+                      value={gasto.montoCompra}
+                      onChange={(e) => actualizarGasto(gasto.id, 'montoCompra', e.target.value)}
                       placeholder="0.00"
                       InputProps={{
                         startAdornment: <InputAdornment position="start">$</InputAdornment>,
@@ -305,28 +469,24 @@ const ReporteBecas = () => {
                     />
                   </Box>
 
-                  {/* Total de gastos */}
+                  {/* Observación */}
                   <Box>
                     <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                      Total de gastos
+                      Observación
                     </Typography>
                     <TextField
-                      type="number"
                       size="small"
                       fullWidth
-                      value={gasto.totalGastos}
-                      onChange={(e) => actualizarGasto(gasto.id, 'totalGastos', e.target.value)}
-                      placeholder="0.00"
-                      InputProps={{
-                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                      }}
+                      value={gasto.observacion}
+                      onChange={(e) => actualizarGasto(gasto.id, 'observacion', e.target.value)}
+                      placeholder="Detalle adicional"
                     />
                   </Box>
 
-                  {/* Nuevo Saldo */}
+                  {/* Acción */}
                   <Box>
                     <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                      Nuevo Saldo
+                      Acción
                     </Typography>
                     <Box 
                       sx={{ 
@@ -342,9 +502,6 @@ const ReporteBecas = () => {
                         justifyContent: 'space-between'
                       }}
                     >
-                      <Typography variant="body2" color="text.secondary">
-                        ${gasto.nuevoSaldo || '0.00'}
-                      </Typography>
                       <Tooltip title="Eliminar gasto">
                         <IconButton 
                           size="small" 

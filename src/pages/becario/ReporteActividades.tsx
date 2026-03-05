@@ -107,6 +107,7 @@ const ReporteActividades: React.FC = () => {
       setSaving(true);
 
       const reportTitle = `Reporte de Actividades - ${periodo}`;
+      const actividadesResumen = actividades.trim().replace(/\s+/g, ' ').slice(0, 180);
 
       const excelFile = await buildExcelFile({
         sheetName: 'Actividades',
@@ -114,17 +115,22 @@ const ReporteActividades: React.FC = () => {
         evidences: archivos,
         metadata: {
           Titulo: reportTitle,
+          Seccion: 'Reporte trimestral de actividades',
           Periodo: periodo,
           Usuario: user.email,
           Fecha: new Date().toLocaleString('es-MX'),
+          ActividadesRegistradas: actividades.trim().length,
+          LogrosRegistrados: logros.trim().length,
+          DificultadesRegistradas: dificultades.trim().length,
           EvidenciasAdjuntas: archivos.length,
+          EvidenciasListado: archivos.map((file) => file.name).join(' | ') || 'Sin evidencias adjuntas',
         },
         rows: [
           {
             Periodo: periodo,
-            Actividades: actividades,
-            Logros: logros,
-            Dificultades: dificultades,
+            ActividadesPrincipales: actividades,
+            LogrosYAvances: logros || 'Sin registro',
+            DificultadesEnfrentadas: dificultades || 'Sin registro',
             Evidencias: archivos.map((file) => file.name).join(' | '),
           },
         ],
@@ -139,7 +145,7 @@ const ReporteActividades: React.FC = () => {
 
       await reportService.create({
         title: reportTitle,
-        description: `Periodo: ${periodo}. Actividades: ${actividades}`,
+        description: `Periodo: ${periodo}. Actividades: ${actividadesResumen}`,
         type: 'ACTIVIDADES',
         id_archive: archiveResponse.data.id,
       });
