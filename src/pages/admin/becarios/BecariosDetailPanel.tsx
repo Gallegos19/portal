@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Button, Chip, Divider, Tooltip, Typography } from '@mui/material';
-import { Clear as ClearIcon } from '@mui/icons-material';
+import { Box, Button, Chip, Divider, IconButton, Tooltip, Typography } from '@mui/material';
+import { Clear as ClearIcon, Description as DescriptionIcon } from '@mui/icons-material';
 import type { Intern, Subproject, UserApi } from '../../../types/api';
 
 interface BecariosDetailPanelProps {
@@ -9,6 +9,7 @@ interface BecariosDetailPanelProps {
   selectedSubproject?: Subproject;
   selectedFacilitator?: string;
   onClear: () => void;
+  onViewDocuments?: (intern: Intern) => void;
   formatDate: (value?: string) => string;
 }
 
@@ -18,6 +19,7 @@ const BecariosDetailPanel: React.FC<BecariosDetailPanelProps> = ({
   selectedSubproject,
   selectedFacilitator,
   onClear,
+  onViewDocuments,
   formatDate
 }) => {
   return (
@@ -27,11 +29,30 @@ const BecariosDetailPanel: React.FC<BecariosDetailPanelProps> = ({
           Detalle del becario
         </Typography>
         {selectedIntern && (
-          <Tooltip title="Limpiar seleccion">
-            <Button size="small" variant="text" startIcon={<ClearIcon />} onClick={onClear}>
-              Limpiar
-            </Button>
-          </Tooltip>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {onViewDocuments && (
+              <Tooltip title="Ver documentos">
+                <IconButton
+                  size="small"
+                  color="primary"
+                onClick={() => onViewDocuments(selectedIntern)}
+                  sx={{
+                    bgcolor: 'action.hover',
+                    '&:hover': {
+                      bgcolor: 'action.selected',
+                    },
+                  }}
+              >
+                  <DescriptionIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Limpiar seleccion">
+              <Button size="small" variant="text" startIcon={<ClearIcon />} onClick={onClear}>
+                Limpiar
+              </Button>
+            </Tooltip>
+          </Box>
         )}
       </Box>
 

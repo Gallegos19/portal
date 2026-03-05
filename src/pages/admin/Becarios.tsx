@@ -4,17 +4,24 @@ import {
   Box,
   Button,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Paper,
   Snackbar,
   Typography
 } from '@mui/material';
 import {
   Add as AddIcon,
+  Download as DownloadIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
-import type { Intern, Region, SocialFacilitator, Subproject, UserApi } from '../../types/api';
+import type { Document, Intern, Region, SocialFacilitator, Subproject, UserApi } from '../../types/api';
 import { USER_ROLES } from '../../utils/constants';
 import { useToast } from '../../hooks/useToast';
+import { archiveService } from '../../services/api/archive';
+import { documentService } from '../../services/api/document';
 import { internService } from '../../services/api/intern';
 import { regionService } from '../../services/api/region';
 import { socialFacilitatorService } from '../../services/api/socialFacilitator';
@@ -168,6 +175,10 @@ const Becarios: React.FC = () => {
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const { toast, showToast, closeToast } = useToast();
   const [internPendingDelete, setInternPendingDelete] = React.useState<Intern | null>(null);
+  const [documentsOpen, setDocumentsOpen] = React.useState(false);
+  const [documentsLoading, setDocumentsLoading] = React.useState(false);
+  const [documentsError, setDocumentsError] = React.useState<string | null>(null);
+  const [selectedInternDocuments, setSelectedInternDocuments] = React.useState<Document[]>([]);
 
   const userMap = React.useMemo(() => buildUserMap(users), [users]);
   const subprojectMap = React.useMemo(() => buildSubprojectMap(subprojects), [subprojects]);
@@ -257,6 +268,44 @@ const Becarios: React.FC = () => {
 
   const handleClearSelection = () => {
     setSelectedIntern(null);
+  };
+
+  const handleOpenDocuments = async (intern: Intern) => {
+    setDocumentsOpen(true);
+    setDocumentsLoading(true);
+    setDocumentsError(null);
+    setSelectedInternDocuments([]);
+
+    try {
+      const response = await documentService.getByInternId(intern.id);
+      setSelectedInternDocuments(response.data || []);
+    } catch (error) {
+      console.error('Error cargando documentos del becario:', error);
+      setDocumentsError('No se pudieron cargar los documentos del becario.');
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const handleCloseDocuments = () => {
+    setDocumentsOpen(false);
+    setDocumentsError(null);
+    setSelectedInternDocuments([]);
+  };
+
+  const handleDownloadDocument = async (documentItem: Document) => {
+    if (!documentItem.id_archive) {
+      showToast('Este documento no tiene archivo asociado.', 'warning');
+      return;
+    }
+
+    try {
+      const response = await archiveService.getSignedUrl(documentItem.id_archive, 300);
+      window.open(response.data.signed_url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error descargando documento:', error);
+      showToast('No se pudo descargar el documento.', 'error');
+    }
   };
 
   const formatDateInput = (value?: string): string => {
@@ -623,10 +672,66 @@ const Becarios: React.FC = () => {
             selectedSubproject={selectedSubproject}
             selectedFacilitator={selectedFacilitator}
             onClear={handleClearSelection}
+            onViewDocuments={handleOpenDocuments}
             formatDate={formatDate}
           />
         </Paper>
       </Box>
+
+      <Dialog open={documentsOpen} onClose={handleCloseDocuments} fullWidth maxWidth="md">
+        <DialogTitle>
+          Documentos del becario
+          {selectedIntern ? ` • ${selectedIntern.chid}` : ''}
+        </DialogTitle>
+        <DialogContent dividers>
+          {documentsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {documentsError}
+            </Alert>
+          )}
+
+          {documentsLoading ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Cargando documentos...
+              </Typography>
+            </Box>
+          ) : selectedInternDocuments.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              Este becario no tiene documentos registrados.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'grid', gap: 1.5 }}>
+              {selectedInternDocuments.map((documentItem) => (
+                <Paper
+                  key={documentItem.id}
+                  variant="outlined"
+                  sx={{ p: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {documentItem.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {documentItem.description || 'Sin descripción'}
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => handleDownloadDocument(documentItem)}
+                  >
+                    Descargar
+                  </Button>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDocuments}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
 
       <BecariosCreateDialog
         open={isCreateOpen}
