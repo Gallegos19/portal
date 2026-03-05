@@ -28,7 +28,11 @@ import type { Report } from '../../types/api';
 import { Periodo } from '../../types/types';
 import { reportService } from '../../services/api/report';
 import { archiveService } from '../../services/api/archive';
-import { buildExcelFile } from '../../utils/reportExcel';
+import { internService } from '../../services/api/intern';
+import { subprojectService } from '../../services/api/subproject';
+import { socialFacilitatorService } from '../../services/api/socialFacilitator';
+import { userService } from '../../services/api/user';
+import { buildActividadesExcelFile } from '../../utils/reportExcel';
 
 const ReporteActividades: React.FC = () => {
   const { user } = useAuthStore();
@@ -47,6 +51,14 @@ const ReporteActividades: React.FC = () => {
     };
   });
   const [periodo, setPeriodo] = useState('');
+  const [nombreBecario, setNombreBecario] = useState('');
+  const [chid, setChid] = useState('');
+  const [nivelEducativo, setNivelEducativo] = useState('');
+  const [lugarServicio, setLugarServicio] = useState('');
+  const [zona, setZona] = useState('');
+  const [subproyecto, setSubproyecto] = useState('');
+  const [nombreFacilitador, setNombreFacilitador] = useState('');
+  const [tituloProyecto, setTituloProyecto] = useState('Portal Kuxtal');
   const [actividades, setActividades] = useState('');
   const [logros, setLogros] = useState('');
   const [dificultades, setDificultades] = useState('');
@@ -78,6 +90,56 @@ const ReporteActividades: React.FC = () => {
     loadHistory();
   }, [loadHistory]);
 
+  React.useEffect(() => {
+    if (!user?.id) return;
+
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    if (fullName) {
+      setNombreBecario(fullName);
+    }
+
+    const loadInternContext = async () => {
+      try {
+        const internResponse = await internService.getByUserId(user.id);
+        const intern = internResponse.data;
+
+        if (intern?.chid) {
+          setChid(intern.chid);
+        }
+        if (intern?.education_level) {
+          setNivelEducativo(intern.education_level);
+        }
+        if (intern?.service) {
+          setLugarServicio(intern.service);
+        }
+
+        if (intern?.id_subproject) {
+          const subprojectResponse = await subprojectService.getById(intern.id_subproject);
+          const subprojectData = subprojectResponse.data;
+          if (subprojectData?.name_subproject) {
+            setSubproyecto(subprojectData.name_subproject);
+          }
+          if (subprojectData?.id_social_facilitator) {
+            const facilitatorResponse = await socialFacilitatorService.getById(subprojectData.id_social_facilitator);
+            const facilitator = facilitatorResponse.data;
+            if (facilitator?.id_user) {
+              const facilitatorUserResponse = await userService.getById(facilitator.id_user);
+              const facilitatorUser = facilitatorUserResponse.data;
+              const facilitatorName = `${facilitatorUser.first_name ?? ''} ${facilitatorUser.last_name ?? ''}`.trim();
+              if (facilitatorName) {
+                setNombreFacilitador(facilitatorName);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('No se pudo cargar contexto del becario para reporte de actividades:', error);
+      }
+    };
+
+    loadInternContext();
+  }, [user?.id, user?.firstName, user?.lastName]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       setArchivos([...archivos, ...Array.from(event.target.files)]);
@@ -103,37 +165,43 @@ const ReporteActividades: React.FC = () => {
       return;
     }
 
+    if (!nombreBecario.trim() || !chid.trim() || !subproyecto.trim()) {
+      showToast('Completa nombre, CHID y subproyecto para generar el formato completo.', 'warning');
+      return;
+    }
+
     try {
       setSaving(true);
 
       const reportTitle = `Reporte de Actividades - ${periodo}`;
       const actividadesResumen = actividades.trim().replace(/\s+/g, ' ').slice(0, 180);
+      const actividadesListado = actividades
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 5);
 
-      const excelFile = await buildExcelFile({
-        sheetName: 'Actividades',
+      const informeCompleto = [
+        logros.trim() ? `Logros y avances:\n${logros.trim()}` : '',
+        dificultades.trim() ? `Dificultades enfrentadas:\n${dificultades.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const excelFile = await buildActividadesExcelFile({
         fileName: `${reportTitle.replace(/\s+/g, '_')}.xlsx`,
+        periodo,
+        nombreBecario,
+        chid,
+        nivelEducativo,
+        lugarServicio,
+        zona,
+        subproyecto,
+        nombreFacilitador,
+        tituloProyecto,
+        actividades: actividadesListado,
+        informe: informeCompleto || actividades,
         evidences: archivos,
-        metadata: {
-          Titulo: reportTitle,
-          Seccion: 'Reporte trimestral de actividades',
-          Periodo: periodo,
-          Usuario: user.email,
-          Fecha: new Date().toLocaleString('es-MX'),
-          ActividadesRegistradas: actividades.trim().length,
-          LogrosRegistrados: logros.trim().length,
-          DificultadesRegistradas: dificultades.trim().length,
-          EvidenciasAdjuntas: archivos.length,
-          EvidenciasListado: archivos.map((file) => file.name).join(' | ') || 'Sin evidencias adjuntas',
-        },
-        rows: [
-          {
-            Periodo: periodo,
-            ActividadesPrincipales: actividades,
-            LogrosYAvances: logros || 'Sin registro',
-            DificultadesEnfrentadas: dificultades || 'Sin registro',
-            Evidencias: archivos.map((file) => file.name).join(' | '),
-          },
-        ],
       });
 
       const archiveResponse = await archiveService.uploadFile(
@@ -153,6 +221,7 @@ const ReporteActividades: React.FC = () => {
       showToast('Reporte de actividades exportado y guardado correctamente.', 'success');
 
       setPeriodo('');
+      setZona('');
       setActividades('');
       setLogros('');
       setDificultades('');
@@ -236,15 +305,76 @@ const ReporteActividades: React.FC = () => {
               </Select>
             </FormControl>
 
+            <Box
+              sx={{
+                mb: 3,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+                gap: 2,
+              }}
+            >
+              <TextField
+                size="small"
+                label="Nombre del becario(a)"
+                value={nombreBecario}
+                onChange={(event) => setNombreBecario(event.target.value)}
+                required
+              />
+              <TextField
+                size="small"
+                label="CHID"
+                value={chid}
+                onChange={(event) => setChid(event.target.value)}
+                required
+              />
+              <TextField
+                size="small"
+                label="Nivel educativo"
+                value={nivelEducativo}
+                onChange={(event) => setNivelEducativo(event.target.value)}
+              />
+              <TextField
+                size="small"
+                label="Lugar de servicio"
+                value={lugarServicio}
+                onChange={(event) => setLugarServicio(event.target.value)}
+              />
+              <TextField
+                size="small"
+                label="Zona"
+                value={zona}
+                onChange={(event) => setZona(event.target.value)}
+              />
+              <TextField
+                size="small"
+                label="Subproyecto"
+                value={subproyecto}
+                onChange={(event) => setSubproyecto(event.target.value)}
+                required
+              />
+              <TextField
+                size="small"
+                label="Facilitador(a) social"
+                value={nombreFacilitador}
+                onChange={(event) => setNombreFacilitador(event.target.value)}
+              />
+              <TextField
+                size="small"
+                label="Título del proyecto"
+                value={tituloProyecto}
+                onChange={(event) => setTituloProyecto(event.target.value)}
+              />
+            </Box>
+
             {/* Actividades principales */}
             <TextField
               fullWidth
               label="Actividades principales realizadas"
               multiline
-              rows={4}
+              rows={5}
               value={actividades}
               onChange={(e) => setActividades(e.target.value)}
-              placeholder="Describe las actividades más importantes que realizaste durante este trimestre..."
+              placeholder="Escribe una actividad por línea (máximo 5) para el resumen del formato..."
               sx={{ mb: 3 }}
               required
             />

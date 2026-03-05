@@ -532,3 +532,255 @@ export const buildBecasExcelFile = async ({
 
   return new File([blob], fileName, { type: blob.type });
 };
+
+interface BuildActividadesExcelParams {
+  fileName: string;
+  periodo: string;
+  nombreBecario: string;
+  chid: string;
+  nivelEducativo: string;
+  lugarServicio: string;
+  zona: string;
+  subproyecto: string;
+  nombreFacilitador: string;
+  tituloProyecto: string;
+  actividades: string[];
+  informe: string;
+  evidences?: File[];
+}
+
+const applyThinBorderRange = (worksheet: ExcelJS.Worksheet, fromCol: string, toCol: string, row: number) => {
+  const start = fromCol.charCodeAt(0);
+  const end = toCol.charCodeAt(0);
+  for (let code = start; code <= end; code += 1) {
+    applyBoxBorder(worksheet.getCell(`${String.fromCharCode(code)}${row}`), 'FF94A3B8');
+  }
+};
+
+export const buildActividadesExcelFile = async ({
+  fileName,
+  periodo,
+  nombreBecario,
+  chid,
+  nivelEducativo,
+  lugarServicio,
+  zona,
+  subproyecto,
+  nombreFacilitador,
+  tituloProyecto,
+  actividades,
+  informe,
+  evidences = [],
+}: BuildActividadesExcelParams): Promise<File> => {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Portal Kuxtal';
+  workbook.lastModifiedBy = 'Portal Kuxtal';
+  workbook.created = new Date();
+
+  const portada = workbook.addWorksheet('Reporte Avances');
+  portada.columns = [
+    { key: 'A', width: 22 },
+    { key: 'B', width: 24 },
+    { key: 'C', width: 16 },
+    { key: 'D', width: 20 },
+    { key: 'E', width: 20 },
+    { key: 'F', width: 20 },
+    { key: 'G', width: 20 },
+  ];
+
+  const [unboundLogoData, kuxtalLogoData] = await Promise.all([
+    toPngDataUrl(unboundLogo),
+    toPngDataUrl(kuxtalLogo),
+  ]);
+
+  if (unboundLogoData) {
+    const logoId = workbook.addImage({ base64: unboundLogoData, extension: 'png' });
+    portada.addImage(logoId, { tl: { col: 0, row: 1 }, ext: { width: 70, height: 52 } });
+  }
+  if (kuxtalLogoData) {
+    const logoId = workbook.addImage({ base64: kuxtalLogoData, extension: 'png' });
+    portada.addImage(logoId, { tl: { col: 5.3, row: 0 }, ext: { width: 140, height: 55 } });
+  }
+
+  portada.mergeCells('A1:G1');
+  portada.getCell('A1').value = 'FORMATO DE REPORTE BIMESTRAL DE AVANCES DE SERVICIO';
+  portada.getCell('A1').font = { bold: true, size: 11, color: { argb: 'FF0F4C5C' } };
+  portada.getCell('A1').alignment = { horizontal: 'left', vertical: 'middle' };
+
+  portada.mergeCells('A2:G2');
+  portada.getCell('A2').value = 'PROGRAMA DE BECAS DE UNBOUND';
+  portada.getCell('A2').font = { bold: true, size: 12, color: { argb: 'FF0F4C5C' } };
+  portada.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  portada.mergeCells('A3:G3');
+  portada.getCell('A3').value = 'REPORTE BIMESTRAL DE AVANCES DE SERVICIO';
+  portada.getCell('A3').font = { bold: true, size: 17, color: { argb: 'FF0F4C5C' } };
+  portada.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+  portada.getRow(3).height = 30;
+
+  portada.mergeCells('A5:G5');
+  portada.getCell('A5').value = 'INFORMACIÓN GENERAL DEL/LA BECARIO (A)';
+  applyHeaderStyle(portada.getCell('A5'), 'FF22B8BF', 'FF0F172A');
+
+  const generalRows: Array<[string, string, string, string]> = [
+    ['NOMBRE DEL BECARIO:', nombreBecario, 'CHID', chid],
+    ['NIVEL EDUCATIVO:', nivelEducativo, '', ''],
+    ['LUGAR DE SERVICIO', lugarServicio, '', ''],
+    ['ZONA', zona, 'SUBPROYECTO:', subproyecto],
+    ['NOMBRE DEL FACILITADOR/A SOCIAL', nombreFacilitador, '', ''],
+    ['BIMESTRE Y AÑO', periodo, '', ''],
+  ];
+
+  let rowPointer = 6;
+  generalRows.forEach(([labelA, valueA, labelB, valueB]) => {
+    portada.mergeCells(`A${rowPointer}:B${rowPointer}`);
+    portada.mergeCells(`C${rowPointer}:E${rowPointer}`);
+
+    portada.getCell(`A${rowPointer}`).value = labelA;
+    portada.getCell(`C${rowPointer}`).value = valueA || '';
+    portada.getCell(`F${rowPointer}`).value = labelB;
+    portada.getCell(`G${rowPointer}`).value = valueB || '';
+
+    portada.getCell(`A${rowPointer}`).font = { bold: true, size: 9 };
+    portada.getCell(`F${rowPointer}`).font = { bold: true, size: 9 };
+
+    ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col) => applyBoxBorder(portada.getCell(`${col}${rowPointer}`), 'FF7C8A99'));
+    rowPointer += 1;
+  });
+
+  rowPointer += 1;
+  portada.mergeCells(`A${rowPointer}:G${rowPointer}`);
+  portada.getCell(`A${rowPointer}`).value = 'RESUMEN';
+  applyHeaderStyle(portada.getCell(`A${rowPointer}`), 'FF22B8BF', 'FF0F172A');
+  rowPointer += 1;
+
+  portada.mergeCells(`A${rowPointer}:C${rowPointer}`);
+  portada.mergeCells(`D${rowPointer}:G${rowPointer}`);
+  portada.getCell(`A${rowPointer}`).value = 'Título del proyecto de servicio comunitario';
+  portada.getCell(`D${rowPointer}`).value = tituloProyecto || '';
+  portada.getCell(`A${rowPointer}`).font = { bold: true, size: 9 };
+  applyThinBorderRange(portada, 'A', 'G', rowPointer);
+  rowPointer += 1;
+
+  portada.mergeCells(`B${rowPointer}:G${rowPointer}`);
+  portada.getCell(`A${rowPointer}`).value = 'N°';
+  portada.getCell(`B${rowPointer}`).value = 'Actividades (enumerar las actividades realizadas durante el bimestre)';
+  applyHeaderStyle(portada.getCell(`A${rowPointer}`), 'FF22B8BF', 'FF0F172A');
+  applyHeaderStyle(portada.getCell(`B${rowPointer}`), 'FF22B8BF', 'FF0F172A');
+  applyThinBorderRange(portada, 'A', 'G', rowPointer);
+  rowPointer += 1;
+
+  for (let index = 0; index < 5; index += 1) {
+    portada.mergeCells(`B${rowPointer}:G${rowPointer}`);
+    portada.getCell(`A${rowPointer}`).value = index + 1;
+    portada.getCell(`B${rowPointer}`).value = actividades[index] || '';
+    portada.getCell(`B${rowPointer}`).alignment = { wrapText: true, vertical: 'top' };
+    portada.getRow(rowPointer).height = 22;
+    applyThinBorderRange(portada, 'A', 'G', rowPointer);
+    rowPointer += 1;
+  }
+
+  rowPointer += 1;
+  portada.mergeCells(`A${rowPointer}:G${rowPointer}`);
+  portada.getCell(`A${rowPointer}`).value = 'INFORME';
+  applyHeaderStyle(portada.getCell(`A${rowPointer}`), 'FF22B8BF', 'FF0F172A');
+  rowPointer += 1;
+
+  const infoBullets = [
+    'Describe detalladamente cada actividad realizada durante el bimestre y los resultados alcanzados.',
+    'Comparte los desafíos durante la aplicación de las actividades y las soluciones implementadas.',
+    'Comparte tu experiencia de servicio durante este bimestre.',
+  ];
+  infoBullets.forEach((bullet) => {
+    portada.mergeCells(`A${rowPointer}:G${rowPointer}`);
+    portada.getCell(`A${rowPointer}`).value = `• ${bullet}`;
+    portada.getCell(`A${rowPointer}`).font = { size: 9, color: { argb: 'FF0F4C5C' } };
+    applyThinBorderRange(portada, 'A', 'G', rowPointer);
+    rowPointer += 1;
+  });
+
+  portada.mergeCells(`A${rowPointer}:G${rowPointer + 7}`);
+  portada.getCell(`A${rowPointer}`).value = informe || '';
+  portada.getCell(`A${rowPointer}`).alignment = { wrapText: true, vertical: 'top' };
+  portada.getCell(`A${rowPointer}`).font = { size: 10, color: { argb: 'FF1F2937' } };
+  for (let r = rowPointer; r <= rowPointer + 7; r += 1) {
+    applyThinBorderRange(portada, 'A', 'G', r);
+    portada.getRow(r).height = 22;
+  }
+
+  const evidenciaSheet = workbook.addWorksheet('Evidencias');
+  evidenciaSheet.columns = portada.columns;
+
+  evidenciaSheet.mergeCells('A1:G1');
+  evidenciaSheet.getCell('A1').value = 'FORMATO DE REPORTE BIMESTRAL DE AVANCES DE SERVICIO';
+  evidenciaSheet.getCell('A1').font = { bold: true, size: 11, color: { argb: 'FF0F4C5C' } };
+
+  evidenciaSheet.mergeCells('A3:G3');
+  evidenciaSheet.getCell('A3').value = 'EVIDENCIAS';
+  applyHeaderStyle(evidenciaSheet.getCell('A3'), 'FF22B8BF', 'FF0F172A');
+
+  evidenciaSheet.mergeCells('A4:G4');
+  evidenciaSheet.getCell('A4').value = '(Agregar de 2 a 4 fotografías de las actividades realizadas)';
+  evidenciaSheet.getCell('A4').alignment = { horizontal: 'center' };
+  evidenciaSheet.getCell('A4').font = { size: 9, bold: true, color: { argb: 'FF0F4C5C' } };
+
+  const imageFiles = evidences.filter((file) => file.type.startsWith('image/')).slice(0, 4);
+
+  let imageRow = 6;
+  if (imageFiles.length === 0) {
+    evidenciaSheet.mergeCells(`A${imageRow}:G${imageRow + 8}`);
+    evidenciaSheet.getCell(`A${imageRow}`).value = 'Sin evidencias de imagen adjuntas.';
+    evidenciaSheet.getCell(`A${imageRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+    for (let r = imageRow; r <= imageRow + 8; r += 1) {
+      applyThinBorderRange(evidenciaSheet, 'A', 'G', r);
+      evidenciaSheet.getRow(r).height = 22;
+    }
+    imageRow += 10;
+  } else {
+    for (const [index, imageFile] of imageFiles.entries()) {
+      evidenciaSheet.mergeCells(`A${imageRow}:G${imageRow}`);
+      evidenciaSheet.getCell(`A${imageRow}`).value = `Evidencia ${index + 1}: ${imageFile.name}`;
+      evidenciaSheet.getCell(`A${imageRow}`).font = { bold: true, size: 9 };
+
+      const pngDataUrl = await fileToPngDataUrl(imageFile);
+      if (pngDataUrl) {
+        const imageId = workbook.addImage({ base64: pngDataUrl, extension: 'png' });
+        evidenciaSheet.addImage(imageId, {
+          tl: { col: 0, row: imageRow },
+          ext: { width: 710, height: 235 },
+        });
+      }
+
+      for (let r = imageRow; r <= imageRow + 11; r += 1) {
+        applyThinBorderRange(evidenciaSheet, 'A', 'G', r);
+        evidenciaSheet.getRow(r).height = 22;
+      }
+
+      imageRow += 13;
+    }
+  }
+
+  const signatureRow = Math.max(imageRow + 1, 38);
+  evidenciaSheet.mergeCells(`A${signatureRow}:C${signatureRow}`);
+  evidenciaSheet.mergeCells(`E${signatureRow}:G${signatureRow}`);
+  evidenciaSheet.getCell(`A${signatureRow}`).value = '_______________________________';
+  evidenciaSheet.getCell(`E${signatureRow}`).value = '_______________________________';
+  evidenciaSheet.getCell(`A${signatureRow}`).alignment = { horizontal: 'center' };
+  evidenciaSheet.getCell(`E${signatureRow}`).alignment = { horizontal: 'center' };
+
+  evidenciaSheet.mergeCells(`A${signatureRow + 1}:C${signatureRow + 1}`);
+  evidenciaSheet.mergeCells(`E${signatureRow + 1}:G${signatureRow + 1}`);
+  evidenciaSheet.getCell(`A${signatureRow + 1}`).value = 'Nombre y Firma del/La Becario(a)';
+  evidenciaSheet.getCell(`E${signatureRow + 1}`).value = 'Nombre y Firma Del/La Facilitador(a) Social';
+  evidenciaSheet.getCell(`A${signatureRow + 1}`).font = { bold: true, size: 9, color: { argb: 'FF0F4C5C' } };
+  evidenciaSheet.getCell(`E${signatureRow + 1}`).font = { bold: true, size: 9, color: { argb: 'FF0F4C5C' } };
+  evidenciaSheet.getCell(`A${signatureRow + 1}`).alignment = { horizontal: 'center' };
+  evidenciaSheet.getCell(`E${signatureRow + 1}`).alignment = { horizontal: 'center' };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
+  return new File([blob], fileName, { type: blob.type });
+};
