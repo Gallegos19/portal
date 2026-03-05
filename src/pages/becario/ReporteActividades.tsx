@@ -25,6 +25,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../hooks/useToast';
 import type { Report } from '../../types/api';
+import { Periodo } from '../../types/types';
 import { reportService } from '../../services/api/report';
 import { archiveService } from '../../services/api/archive';
 import { buildExcelFile } from '../../utils/reportExcel';
@@ -32,6 +33,19 @@ import { buildExcelFile } from '../../utils/reportExcel';
 const ReporteActividades: React.FC = () => {
   const { user } = useAuthStore();
   const { showToast } = useToast();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const schoolYearStart = currentMonth >= 6 ? currentYear : currentYear - 1;
+  const periodosDisponibles = Object.values(Periodo).map((nombrePeriodo, index) => {
+    const isCurrentSchoolYearEndPeriod = index >= 2;
+    const periodYear = isCurrentSchoolYearEndPeriod ? schoolYearStart + 1 : schoolYearStart;
+
+    return {
+      label: `${nombrePeriodo} ${periodYear}`,
+      value: `${nombrePeriodo} ${periodYear}`,
+    };
+  });
   const [periodo, setPeriodo] = useState('');
   const [actividades, setActividades] = useState('');
   const [logros, setLogros] = useState('');
@@ -208,10 +222,11 @@ const ReporteActividades: React.FC = () => {
                 required
               >
                 <MenuItem value="">Selecciona el período</MenuItem>
-                <MenuItem value="Q1 2024">Q1 2024</MenuItem>
-                <MenuItem value="Q2 2024">Q2 2024</MenuItem>
-                <MenuItem value="Q3 2024">Q3 2024</MenuItem>
-                <MenuItem value="Q4 2024">Q4 2024</MenuItem>
+                {periodosDisponibles.map((item) => (
+                  <MenuItem key={item.value} value={item.value}>
+                    {item.label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
