@@ -1,19 +1,28 @@
 import React, { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Button, Box } from '@mui/material';
-import { Status } from '../../../types/api';
-import type { Region } from '../../../types/api';
+import type { Coordinator } from '../../../types/api';
+import type { CreateRegionPayload } from '../../../services/api/region';
 
 interface RegionesCreateDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Region, 'id'>) => Promise<void>;
+  onSubmit: (data: CreateRegionPayload) => Promise<void>;
   loading: boolean;
+  coordinadores: Coordinator[];
+  coordinatorLabelMap: Map<string, string>;
 }
 
-const RegionesCreateDialog: React.FC<RegionesCreateDialogProps> = ({ open, onClose, onSubmit, loading }) => {
-  const [formData, setFormData] = useState({
+const RegionesCreateDialog: React.FC<RegionesCreateDialogProps> = ({
+  open,
+  onClose,
+  onSubmit,
+  loading,
+  coordinadores,
+  coordinatorLabelMap,
+}) => {
+  const [formData, setFormData] = useState<CreateRegionPayload>({
     name_region: '',
-    status_id: '',
+    id_coordinator: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -21,7 +30,7 @@ const RegionesCreateDialog: React.FC<RegionesCreateDialogProps> = ({ open, onClo
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.name_region.trim()) newErrors.name_region = 'El nombre es requerido';
-    if (!formData.status_id) newErrors.status_id = 'El estado es requerido';
+    if (!formData.id_coordinator) newErrors.id_coordinator = 'El coordinador es requerido';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -30,7 +39,7 @@ const RegionesCreateDialog: React.FC<RegionesCreateDialogProps> = ({ open, onClo
     if (!validateForm()) return;
     try {
       await onSubmit(formData);
-      setFormData({ name_region: '', status_id: '' });
+      setFormData({ name_region: '', id_coordinator: '' });
       setErrors({});
     } catch (error) {
       console.error('Error creating region:', error);
@@ -38,7 +47,7 @@ const RegionesCreateDialog: React.FC<RegionesCreateDialogProps> = ({ open, onClo
   };
 
   const handleClose = () => {
-    setFormData({ name_region: '', status_id: '' });
+    setFormData({ name_region: '', id_coordinator: '' });
     setErrors({});
     onClose();
   };
@@ -60,20 +69,21 @@ const RegionesCreateDialog: React.FC<RegionesCreateDialogProps> = ({ open, onClo
             fullWidth
           />
           <TextField
-            label="Estado"
-            value={formData.status_id}
+            label="Coordinador"
+            value={formData.id_coordinator}
             onChange={(e) => {
-              setFormData({ ...formData, status_id: e.target.value });
-              if (errors.status_id) setErrors({ ...errors, status_id: '' });
+              setFormData({ ...formData, id_coordinator: e.target.value });
+              if (errors.id_coordinator) setErrors({ ...errors, id_coordinator: '' });
             }}
             select
-            error={!!errors.status_id}
-            helperText={errors.status_id}
+            error={!!errors.id_coordinator}
+            helperText={errors.id_coordinator}
             fullWidth
           >
-            {Object.entries(Status).map(([id, value]) => (
-              <MenuItem key={id} value={id}>
-                {`${value.charAt(0)}${value.slice(1).toLowerCase()}`}
+            <MenuItem value="">Seleccionar coordinador</MenuItem>
+            {coordinadores.map((coordinador) => (
+              <MenuItem key={coordinador.id} value={coordinador.id}>
+                {coordinatorLabelMap.get(coordinador.id) ?? `Coordinador ${coordinador.id.substring(0, 8)}`}
               </MenuItem>
             ))}
           </TextField>

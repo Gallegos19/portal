@@ -15,8 +15,11 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Info as InfoIcon } from '@mui/icons-material';
 import { regionService } from '../../services/api/region';
+import type { CreateRegionPayload, UpdateRegionPayload } from '../../services/api/region';
+import { coordinatorService } from '../../services/api/coordinator';
+import { userService } from '../../services/api/user';
 import { useToast } from '../../hooks/useToast';
-import type { Region } from '../../types/api';
+import type { Region, Coordinator, UserApi } from '../../types/api';
 import { Status } from '../../types/api';
 
 // Sub-components
@@ -38,6 +41,8 @@ const Regiones: React.FC = () => {
 
   // State for data
   const [regiones, setRegiones] = useState<Region[]>([]);
+  const [coordinadores, setCoordinadores] = useState<Coordinator[]>([]);
+  const [users, setUsers] = useState<UserApi[]>([]);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
 
   // State for UI
@@ -59,11 +64,6 @@ const Regiones: React.FC = () => {
     delete: false,
   });
 
-  // Comentado: No ser usa en esta versión
-  // const STATUS_ID_BY_VALUE = useMemo(() => {
-  //   return Object.entries(Status).reduce(...
-  // }, []);
-
   const getStatusLabel = useCallback((statusId?: string): string => {
     if (!statusId) return 'Sin estado';
     const statusValue = Status[statusId as keyof typeof Status];
@@ -82,12 +82,30 @@ const Regiones: React.FC = () => {
     return '#9ca3af';
   }, []);
 
-  // Load regions
+  const coordinatorLabelMap = useMemo(() => {
+    const usersById = new Map(users.map((user) => [user.id, `${user.first_name} ${user.last_name}`.trim()]));
+
+    return new Map(
+      coordinadores.map((coordinador) => [
+        coordinador.id,
+        usersById.get(coordinador.id_user) ?? `Coordinador ${coordinador.id.substring(0, 8)}`,
+      ])
+    );
+  }, [coordinadores, users]);
+
+  // Load regions and related data used in dialogs
   const loadRegiones = useCallback(async () => {
     try {
       setLoading((prev) => ({ ...prev, list: true }));
-      const response = await regionService.getAll();
-      setRegiones(response?.data || []);
+      const [regionsResponse, coordinatorsResponse, usersResponse] = await Promise.all([
+        regionService.getAll(),
+        coordinatorService.getAll(),
+        userService.getAll(),
+      ]);
+
+      setRegiones(regionsResponse?.data || []);
+      setCoordinadores(coordinatorsResponse?.data || []);
+      setUsers(usersResponse?.data || []);
       setSelectedRegion(null);
     } catch (error) {
       console.error('Error loading regiones:', error);
@@ -136,16 +154,16 @@ const Regiones: React.FC = () => {
 
   // Create region
   const handleCreateRegion = useCallback(
-    async (data: Omit<Region, 'id'>) => {
+    async (data: CreateRegionPayload) => {
       try {
         setLoading((prev) => ({ ...prev, create: true }));
         const newRegion = await regionService.create(data);
         setRegiones((prev) => [...prev, newRegion?.data || newRegion]);
         setShowCreateDialog(false);
-        showToast('Región creada exitosamente', 'success');
+        showToast('Region creada exitosamente', 'success');
       } catch (error) {
         console.error('Error creating region:', error);
-        showToast('Error al crear la región', 'error');
+        showToast('Error al crear la region', 'error');
       } finally {
         setLoading((prev) => ({ ...prev, create: false }));
       }
@@ -155,17 +173,17 @@ const Regiones: React.FC = () => {
 
   // Update region
   const handleUpdateRegion = useCallback(
-    async (id: string, data: Partial<Region>) => {
+    async (id: string, data: UpdateRegionPayload) => {
       try {
         setLoading((prev) => ({ ...prev, update: true }));
         const updatedRegion = await regionService.updateById(id, data);
         setRegiones((prev) => prev.map((r) => (r.id === id ? (updatedRegion?.data || updatedRegion) : r)));
         setSelectedRegion(updatedRegion?.data || updatedRegion);
         setShowEditDialog(false);
-        showToast('Región actualizada exitosamente', 'success');
+        showToast('Region actualizada exitosamente', 'success');
       } catch (error) {
         console.error('Error updating region:', error);
-        showToast('Error al actualizar la región', 'error');
+        showToast('Error al actualizar la region', 'error');
       } finally {
         setLoading((prev) => ({ ...prev, update: false }));
       }
@@ -182,10 +200,10 @@ const Regiones: React.FC = () => {
         setRegiones((prev) => prev.filter((r) => r.id !== id));
         setSelectedRegion(null);
         setShowDeleteDialog(false);
-        showToast('Región eliminada exitosamente', 'success');
+        showToast('Region eliminada exitosamente', 'success');
       } catch (error) {
         console.error('Error deleting region:', error);
-        showToast('Error al eliminar la región', 'error');
+        showToast('Error al eliminar la region', 'error');
       } finally {
         setLoading((prev) => ({ ...prev, delete: false }));
       }
@@ -199,11 +217,11 @@ const Regiones: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4 }}>
         <Box>
           <h1 style={{ margin: 0, fontSize: '2rem', fontWeight: 700, color: '#1e293b' }}>Regiones</h1>
-          <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '14px' }}>Gestión de regiones del sistema</p>
+          <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '14px' }}>Gestion de regiones del sistema</p>
         </Box>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
           onClick={() => setShowCreateDialog(true)}
           sx={{
             bgcolor: '#26C6DA',
@@ -215,7 +233,7 @@ const Regiones: React.FC = () => {
             borderRadius: 1.5,
           }}
         >
-          Nueva Región
+          Nueva Region
         </Button>
       </Box>
 
@@ -232,7 +250,16 @@ const Regiones: React.FC = () => {
       <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row-reverse' } }}>
         {/* Detail Panel */}
         <Box sx={{ flex: { lg: '0 0 320px' } }}>
-          <RegionesDetailPanel region={selectedRegion} getStatusLabel={getStatusLabel} getStatusColor={getStatusColor} />
+          <RegionesDetailPanel
+            region={selectedRegion}
+            getStatusLabel={getStatusLabel}
+            getStatusColor={getStatusColor}
+            coordinatorName={
+              selectedRegion?.id_coordinator
+                ? coordinatorLabelMap.get(selectedRegion.id_coordinator)
+                : undefined
+            }
+          />
         </Box>
 
         {/* Table */}
@@ -254,6 +281,7 @@ const Regiones: React.FC = () => {
                   <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>Nombre</TableCell>
+                      <TableCell sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>Coordinador</TableCell>
                       <TableCell sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>Estado</TableCell>
                       <TableCell sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px', width: 140 }}>Acciones</TableCell>
                     </TableRow>
@@ -273,6 +301,11 @@ const Regiones: React.FC = () => {
                         }}
                       >
                         <TableCell sx={{ color: '#1e293b', fontWeight: 500 }}>{region.name_region ?? region.name ?? 'Sin nombre'}</TableCell>
+                        <TableCell sx={{ color: '#334155' }}>
+                          {region.id_coordinator
+                            ? coordinatorLabelMap.get(region.id_coordinator) ?? `Coordinador ${region.id_coordinator.substring(0, 8)}`
+                            : 'Sin coordinador'}
+                        </TableCell>
                         <TableCell>
                           <Chip
                             label={getStatusLabel(region.status_id)}
@@ -365,6 +398,8 @@ const Regiones: React.FC = () => {
         onClose={() => setShowCreateDialog(false)}
         onSubmit={handleCreateRegion}
         loading={loading.create}
+        coordinadores={coordinadores}
+        coordinatorLabelMap={coordinatorLabelMap}
       />
 
       {selectedRegion && (
@@ -374,6 +409,8 @@ const Regiones: React.FC = () => {
           region={selectedRegion}
           onSubmit={(data) => handleUpdateRegion(selectedRegion.id, data)}
           loading={loading.update}
+          coordinadores={coordinadores}
+          coordinatorLabelMap={coordinatorLabelMap}
         />
       )}
 

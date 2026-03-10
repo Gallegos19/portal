@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Card, Typography, Chip, Avatar } from '@mui/material';
-import { Layers as LayersIcon, Public as PublicIcon } from '@mui/icons-material';
+import { Layers as LayersIcon, Public as PublicIcon, Person as PersonIcon, Group as GroupIcon } from '@mui/icons-material';
 import type { Subproject } from '../../../types/api';
 
 interface SubprojectosDetailPanelProps {
@@ -8,6 +8,8 @@ interface SubprojectosDetailPanelProps {
   getStatusLabel: (statusId?: string) => string;
   getStatusColor: (statusId?: string) => string;
   regionMap: Map<string, string>;
+  coordinatorLabelMap: Map<string, string>;
+  facilitatorLabelMap: Map<string, string>;
 }
 
 const SubprojectosDetailPanel: React.FC<SubprojectosDetailPanelProps> = ({
@@ -15,6 +17,8 @@ const SubprojectosDetailPanel: React.FC<SubprojectosDetailPanelProps> = ({
   getStatusLabel,
   getStatusColor,
   regionMap,
+  coordinatorLabelMap,
+  facilitatorLabelMap,
 }) => {
   if (!subproject) {
     return (
@@ -127,6 +131,62 @@ const SubprojectosDetailPanel: React.FC<SubprojectosDetailPanelProps> = ({
             }}
           >
             {regionMap.get(subproject.id_region ?? subproject.region_id ?? '') ?? 'Sin región'}
+          </Typography>
+        </Box>
+
+        {/* Coordinador */}
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <PersonIcon sx={{ fontSize: 18, color: '#26C6DA' }} />
+            <Typography
+              variant="overline"
+              sx={{
+                color: '#1e293b',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                fontSize: '11px',
+              }}
+            >
+              Coordinador
+            </Typography>
+          </Box>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 500,
+              color: '#1e293b',
+              ml: 3.5,
+            }}
+          >
+            {coordinatorLabelMap.get(subproject.id_coordinator ?? subproject.coordinator_id ?? '') ?? 'Sin coordinador'}
+          </Typography>
+        </Box>
+
+        {/* Facilitador Social */}
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <GroupIcon sx={{ fontSize: 18, color: '#26C6DA' }} />
+            <Typography
+              variant="overline"
+              sx={{
+                color: '#1e293b',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                fontSize: '11px',
+              }}
+            >
+              Facilitador Social
+            </Typography>
+          </Box>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 500,
+              color: '#1e293b',
+              ml: 3.5,
+            }}
+          >
+            {facilitatorLabelMap.get(subproject.id_social_facilitator ?? subproject.social_facilitator_id ?? '') ?? 'Sin facilitador'}
           </Typography>
         </Box>
 

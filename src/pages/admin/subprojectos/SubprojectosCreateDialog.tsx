@@ -11,6 +11,8 @@ interface SubprojectosCreateDialogProps {
   regiones: Region[];
   coordinadores: Coordinator[];
   facilitadores: SocialFacilitator[];
+  coordinatorLabelMap: Map<string, string>;
+  facilitatorLabelMap: Map<string, string>;
 }
 
 const SubprojectosCreateDialog: React.FC<SubprojectosCreateDialogProps> = ({
@@ -21,6 +23,8 @@ const SubprojectosCreateDialog: React.FC<SubprojectosCreateDialogProps> = ({
   regiones,
   coordinadores,
   facilitadores,
+  coordinatorLabelMap,
+  facilitatorLabelMap,
 }) => {
   const [formData, setFormData] = useState({
     name_subproject: '',
@@ -109,7 +113,7 @@ const SubprojectosCreateDialog: React.FC<SubprojectosCreateDialogProps> = ({
             <MenuItem value="">Seleccionar coordinador</MenuItem>
             {coordinadores.map((coordinador) => (
               <MenuItem key={coordinador.id} value={coordinador.id}>
-                Coordinador {coordinador.id.substring(0, 8)}
+                {coordinatorLabelMap.get(coordinador.id) ?? `Coordinador ${coordinador.id.substring(0, 8)}`}
               </MenuItem>
             ))}
           </TextField>
@@ -123,7 +127,7 @@ const SubprojectosCreateDialog: React.FC<SubprojectosCreateDialogProps> = ({
             <MenuItem value="">Seleccionar facilitador</MenuItem>
             {facilitadores.map((facilitador) => (
               <MenuItem key={facilitador.id} value={facilitador.id}>
-                Facilitador {facilitador.id.substring(0, 8)}
+                {facilitatorLabelMap.get(facilitador.id) ?? `Facilitador ${facilitador.id.substring(0, 8)}`}
               </MenuItem>
             ))}
           </TextField>

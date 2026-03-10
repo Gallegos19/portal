@@ -7,9 +7,15 @@ interface RegionesDetailPanelProps {
   region: Region | null;
   getStatusLabel: (statusId?: string) => string;
   getStatusColor: (statusId?: string) => string;
+  coordinatorName?: string;
 }
 
-const RegionesDetailPanel: React.FC<RegionesDetailPanelProps> = ({ region, getStatusLabel, getStatusColor }) => {
+const RegionesDetailPanel: React.FC<RegionesDetailPanelProps> = ({
+  region,
+  getStatusLabel,
+  getStatusColor,
+  coordinatorName,
+}) => {
   if (!region) {
     return (
       <Card
@@ -127,6 +133,30 @@ const RegionesDetailPanel: React.FC<RegionesDetailPanelProps> = ({ region, getSt
           >
             {region.id}
           </Typography>
+        </Box>
+
+        <Box>
+          <Typography
+            variant="overline"
+            sx={{
+              color: '#1e293b',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              fontSize: '11px',
+              display: 'block',
+              mb: 1,
+            }}
+          >
+            Coordinador
+          </Typography>
+          <Typography sx={{ color: '#334155', fontSize: '14px', fontWeight: 500 }}>
+            {coordinatorName ?? 'No asignado'}
+          </Typography>
+          {region.id_coordinator && (
+            <Typography sx={{ color: '#64748b', fontSize: '12px', fontFamily: 'monospace', mt: 0.5 }}>
+              {region.id_coordinator}
+            </Typography>
+          )}
         </Box>
       </Box>
     </Card>

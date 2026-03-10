@@ -173,6 +173,7 @@ export interface Training extends BaseNamedEntity {
 export interface Region extends BaseStatusEntity {
   name_region?: string;
   name?: string;
+  id_coordinator?: string;
 }
 
 export interface UserApi extends BaseEntity {

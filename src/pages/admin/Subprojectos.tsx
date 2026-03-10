@@ -19,8 +19,9 @@ import { subprojectService } from '../../services/api/subproject';
 import { regionService } from '../../services/api/region';
 import { coordinatorService } from '../../services/api/coordinator';
 import { socialFacilitatorService } from '../../services/api/socialFacilitator';
+import { userService } from '../../services/api/user';
 import { useToast } from '../../hooks/useToast';
-import type { Subproject, Region, Coordinator, SocialFacilitator } from '../../types/api';
+import type { Subproject, Region, Coordinator, SocialFacilitator, UserApi } from '../../types/api';
 import { Status } from '../../types/api';
 
 // Sub-components
@@ -45,6 +46,7 @@ const Subprojectos: React.FC = () => {
   const [regiones, setRegiones] = useState<Region[]>([]);
   const [coordinadores, setCoordinadores] = useState<Coordinator[]>([]);
   const [facilitadores, setFacilitadores] = useState<SocialFacilitator[]>([]);
+  const [users, setUsers] = useState<UserApi[]>([]);
   const [selectedSubproject, setSelectedSubproject] = useState<Subproject | null>(null);
 
   // State for UI
@@ -95,20 +97,46 @@ const Subprojectos: React.FC = () => {
     return new Map(regiones.map((r) => [r.id, r.name_region ?? r.name ?? 'Sin nombre']));
   }, [regiones]);
 
+  const userNameMap = useMemo(() => {
+    return new Map(
+      users.map((user) => [user.id, `${user.first_name} ${user.last_name}`.trim() || user.email])
+    );
+  }, [users]);
+
+  const coordinatorLabelMap = useMemo(() => {
+    return new Map(
+      coordinadores.map((coordinator) => [
+        coordinator.id,
+        userNameMap.get(coordinator.id_user) ?? `Coordinador ${coordinator.id.slice(0, 8)}`,
+      ])
+    );
+  }, [coordinadores, userNameMap]);
+
+  const facilitatorLabelMap = useMemo(() => {
+    return new Map(
+      facilitadores.map((facilitator) => [
+        facilitator.id,
+        userNameMap.get(facilitator.id_user) ?? `Facilitador ${facilitator.id.slice(0, 8)}`,
+      ])
+    );
+  }, [facilitadores, userNameMap]);
+
   // Load all data
   const loadData = useCallback(async () => {
     try {
       setLoading((prev) => ({ ...prev, list: true }));
-      const [subprojectsRes, regionsRes, coordinatorsRes, facilitatorsRes] = await Promise.all([
+      const [subprojectsRes, regionsRes, coordinatorsRes, facilitatorsRes, usersRes] = await Promise.all([
         subprojectService.getAll(),
         regionService.getAll(),
         coordinatorService.getAll(),
         socialFacilitatorService.getAll(),
+        userService.getAll(),
       ]);
       setSubprojectos(subprojectsRes?.data || []);
       setRegiones(regionsRes?.data || []);
       setCoordinadores(coordinatorsRes?.data || []);
       setFacilitadores(facilitatorsRes?.data || []);
+      setUsers(usersRes?.data || []);
       setSelectedSubproject(null);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -271,6 +299,8 @@ const Subprojectos: React.FC = () => {
             getStatusLabel={getStatusLabel}
             getStatusColor={getStatusColor}
             regionMap={regionMap}
+            coordinatorLabelMap={coordinatorLabelMap}
+            facilitatorLabelMap={facilitatorLabelMap}
           />
         </Box>
 
@@ -407,6 +437,8 @@ const Subprojectos: React.FC = () => {
         regiones={regiones}
         coordinadores={coordinadores}
         facilitadores={facilitadores}
+        coordinatorLabelMap={coordinatorLabelMap}
+        facilitatorLabelMap={facilitatorLabelMap}
       />
 
       {selectedSubproject && (
@@ -419,6 +451,8 @@ const Subprojectos: React.FC = () => {
           regiones={regiones}
           coordinadores={coordinadores}
           facilitadores={facilitadores}
+          coordinatorLabelMap={coordinatorLabelMap}
+          facilitatorLabelMap={facilitatorLabelMap}
         />
       )}
 
