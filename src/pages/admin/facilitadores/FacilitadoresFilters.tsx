@@ -56,12 +56,12 @@ const FacilitadoresFilters: React.FC<FacilitadoresFiltersProps> = ({
               </InputAdornment>
             )
           }}
-          sx={{ minWidth: 280 }}
+          sx={{ width: { xs: '100%', sm: 280 }, maxWidth: '100%' }}
         />
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <FormControl size="small" sx={{ minWidth: 180 }}>
+        <FormControl size="small" sx={{ width: { xs: '100%', sm: 180 }, minWidth: 0 }}>
           <InputLabel>Estado</InputLabel>
           <Select
             value={statusFilter}
@@ -75,7 +75,7 @@ const FacilitadoresFilters: React.FC<FacilitadoresFiltersProps> = ({
           </Select>
         </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 220 }}>
+        <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: 0 }}>
           <InputLabel>Region</InputLabel>
           <Select
             value={regionFilter}

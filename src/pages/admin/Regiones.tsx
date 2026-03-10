@@ -249,7 +249,7 @@ const Regiones: React.FC = () => {
       {/* Main Content */}
       <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row-reverse' } }}>
         {/* Detail Panel */}
-        <Box sx={{ flex: { lg: '0 0 320px' } }}>
+        <Box sx={{ flex: { xs: '1 1 auto', lg: '0 0 320px' }, width: '100%' }}>
           <RegionesDetailPanel
             region={selectedRegion}
             getStatusLabel={getStatusLabel}
@@ -276,8 +276,8 @@ const Regiones: React.FC = () => {
                 overflow: 'hidden',
               }}
             >
-              <TableContainer>
-                <Table>
+              <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table sx={{ minWidth: 760 }}>
                   <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>Nombre</TableCell>

@@ -457,7 +457,7 @@ const Capacitacion: React.FC = () => {
         </Box>
       </Box>
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={1.5} mb={3}>
         <TextField
           variant="outlined"
           placeholder="Buscar videos..."
@@ -470,10 +470,10 @@ const Capacitacion: React.FC = () => {
                 <SearchIcon color="action" />
               </InputAdornment>
             ),
-            sx: { width: 350 },
+            sx: { width: { xs: '100%', sm: 350 }, maxWidth: '100%' },
           }}
         />
-        <Box>
+        <Box sx={{ width: { xs: '100%', sm: 'auto' }, display: 'flex', justifyContent: { xs: 'flex-end', sm: 'initial' } }}>
           <Button variant="outlined" startIcon={<FilterIcon />} sx={{ mr: 1 }} disabled>
             Filtros
           </Button>
@@ -493,8 +493,8 @@ const Capacitacion: React.FC = () => {
       </Box>
 
       <Paper variant="outlined">
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>
                 <TableCell padding="checkbox">

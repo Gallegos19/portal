@@ -192,7 +192,7 @@ const Capacitaciones: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+      <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={4}>
         <Box>
           <Typography variant="h5" component="h1" fontWeight="bold" gutterBottom>
             Capacitaciones
@@ -202,7 +202,7 @@ const Capacitaciones: React.FC = () => {
           </Typography>
         </Box>
 
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateDialog(true)}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowCreateDialog(true)} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           Nueva Capacitación
         </Button>
       </Box>

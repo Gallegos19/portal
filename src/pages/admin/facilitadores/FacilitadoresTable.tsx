@@ -65,8 +65,8 @@ const FacilitadoresTable: React.FC<FacilitadoresTableProps> = ({
 
   return (
     <>
-      <TableContainer>
-        <Table>
+      <TableContainer sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 860 }}>
           <TableHead>
             <TableRow>
               <TableCell>Nombre</TableCell>
@@ -158,6 +158,7 @@ const FacilitadoresTable: React.FC<FacilitadoresTableProps> = ({
         onRowsPerPageChange={(event) => onRowsPerPageChange(parseInt(event.target.value, 10))}
         labelRowsPerPage="Filas por pagina:"
         labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        sx={{ '& .MuiTablePagination-toolbar': { flexWrap: { xs: 'wrap', sm: 'nowrap' }, rowGap: 1 } }}
       />
     </>
   );

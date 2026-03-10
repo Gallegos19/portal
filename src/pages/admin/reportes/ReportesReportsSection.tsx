@@ -64,7 +64,7 @@ const ReportesReportsSection: React.FC<ReportesReportsSectionProps> = ({
   onOpenArchive
 }) => {
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2, flexWrap: 'wrap' }}>
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -88,7 +88,7 @@ const ReportesReportsSection: React.FC<ReportesReportsSectionProps> = ({
               </InputAdornment>
             )
           }}
-          sx={{ minWidth: 280 }}
+          sx={{ width: { xs: '100%', sm: 280 }, maxWidth: '100%' }}
         />
       </Box>
 
@@ -98,8 +98,8 @@ const ReportesReportsSection: React.FC<ReportesReportsSectionProps> = ({
         </Box>
       ) : (
         <>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 820 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Titulo</TableCell>
@@ -168,6 +168,7 @@ const ReportesReportsSection: React.FC<ReportesReportsSectionProps> = ({
             onRowsPerPageChange={(event) => onRowsPerPageChange(parseInt(event.target.value, 10))}
             labelRowsPerPage="Filas por pagina:"
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+            sx={{ '& .MuiTablePagination-toolbar': { flexWrap: { xs: 'wrap', sm: 'nowrap' }, rowGap: 1 } }}
           />
         </>
       )}

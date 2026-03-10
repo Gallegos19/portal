@@ -359,7 +359,7 @@ const Formatos: React.FC<FormatosProps> = ({
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+      <Box display="flex" justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} flexDirection={{ xs: 'column', sm: 'row' }} gap={2} mb={4}>
         <Box>
           <Typography variant="h5" component="h1" fontWeight="bold" gutterBottom>
             Formatos
@@ -371,7 +371,7 @@ const Formatos: React.FC<FormatosProps> = ({
           </Typography>
         </Box>
         {canCreate && (
-          <Button variant="contained" startIcon={<CloudUploadIcon />} onClick={handleOpenModal}>
+          <Button variant="contained" startIcon={<CloudUploadIcon />} onClick={handleOpenModal} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Subir Formato
           </Button>
         )}
@@ -383,7 +383,7 @@ const Formatos: React.FC<FormatosProps> = ({
         </Alert>
       )}
 
-      <Box display="flex" gap={2} mb={3}>
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
         <TextField
           size="small"
           placeholder="Buscar formato..."
@@ -397,10 +397,10 @@ const Formatos: React.FC<FormatosProps> = ({
             ),
             sx: { borderRadius: 4, bgcolor: 'background.paper' },
           }}
-          sx={{ width: 300 }}
+          sx={{ width: { xs: '100%', sm: 300 }, maxWidth: '100%' }}
         />
 
-        <FormControl size="small" sx={{ minWidth: 200 }}>
+        <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: 0 }}>
           <InputLabel>Filtrar por rol</InputLabel>
           <Select
             value={rolFiltro}
@@ -580,8 +580,8 @@ const Formatos: React.FC<FormatosProps> = ({
       </Dialog>
 
       <Paper elevation={0} sx={{ width: '100%', mb: 2, borderRadius: 2, overflow: 'hidden' }}>
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 760 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Nombre del Formato</TableCell>
@@ -689,6 +689,7 @@ const Formatos: React.FC<FormatosProps> = ({
           labelDisplayedRows={({ from, to, count }) =>
             `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
           }
+          sx={{ '& .MuiTablePagination-toolbar': { flexWrap: { xs: 'wrap', sm: 'nowrap' }, rowGap: 1 } }}
         />
       </Paper>
     </Container>

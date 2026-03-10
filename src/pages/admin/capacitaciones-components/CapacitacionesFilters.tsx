@@ -25,7 +25,7 @@ const CapacitacionesFilters: React.FC<CapacitacionesFiltersProps> = ({
   onAudienceFilterChange,
 }) => {
   return (
-    <Box display="flex" gap={2} mb={3}>
+    <Box display="flex" gap={2} mb={3} flexWrap="wrap">
       <TextField
         size="small"
         placeholder="Buscar capacitación..."
@@ -39,10 +39,10 @@ const CapacitacionesFilters: React.FC<CapacitacionesFiltersProps> = ({
           ),
           sx: { borderRadius: 4, bgcolor: 'background.paper' },
         }}
-        sx={{ width: 320 }}
+        sx={{ width: { xs: '100%', sm: 320 }, maxWidth: '100%' }}
       />
 
-      <FormControl size="small" sx={{ minWidth: 220 }}>
+      <FormControl size="small" sx={{ width: { xs: '100%', sm: 220 }, minWidth: 0 }}>
         <InputLabel>Filtrar por audiencia</InputLabel>
         <Select
           value={audienceFilter}

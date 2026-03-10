@@ -64,8 +64,8 @@ const BecariosTable: React.FC<BecariosTableProps> = ({
 
   return (
     <>
-      <TableContainer>
-        <Table>
+      <TableContainer sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
               <TableCell>Nombre</TableCell>
@@ -174,6 +174,7 @@ const BecariosTable: React.FC<BecariosTableProps> = ({
         onRowsPerPageChange={(event) => onRowsPerPageChange(parseInt(event.target.value, 10))}
         labelRowsPerPage="Filas por pagina:"
         labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+        sx={{ '& .MuiTablePagination-toolbar': { flexWrap: { xs: 'wrap', sm: 'nowrap' }, rowGap: 1 } }}
       />
     </>
   );

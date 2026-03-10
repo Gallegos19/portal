@@ -33,7 +33,7 @@ const SubprojectosFilters: React.FC<SubprojectosFiltersProps> = ({
         boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       }}
     >
-      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 2, alignItems: { xs: 'stretch', sm: 'flex-end' }, flexWrap: 'wrap' }}>
         <TextField
           label="Buscar por nombre"
           value={searchTerm}
@@ -42,7 +42,8 @@ const SubprojectosFilters: React.FC<SubprojectosFiltersProps> = ({
             startAdornment: <SearchIcon sx={{ mr: 1, color: '#94a3b8' }} />,
           }}
           sx={{
-            minWidth: 250,
+            width: { xs: '100%', sm: 250 },
+            maxWidth: '100%',
             '& .MuiOutlinedInput-root': {
               borderRadius: 1.5,
             },
@@ -55,7 +56,7 @@ const SubprojectosFilters: React.FC<SubprojectosFiltersProps> = ({
           value={regionFilter}
           onChange={(e) => onRegionFilterChange(e.target.value)}
           select
-          sx={{ minWidth: 180, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+          sx={{ width: { xs: '100%', sm: 180 }, minWidth: 0, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
           size="small"
         >
           <MenuItem value="">Todas las regiones</MenuItem>
@@ -70,7 +71,7 @@ const SubprojectosFilters: React.FC<SubprojectosFiltersProps> = ({
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value)}
           select
-          sx={{ minWidth: 150, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+          sx={{ width: { xs: '100%', sm: 180 }, minWidth: 0, '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
           size="small"
         >
           <MenuItem value="">Todos los estados</MenuItem>
@@ -78,7 +79,7 @@ const SubprojectosFilters: React.FC<SubprojectosFiltersProps> = ({
           <MenuItem value="inactivo">Inactivo</MenuItem>
           <MenuItem value="eliminado">Eliminado</MenuItem>
         </TextField>
-        <Box sx={{ ml: 'auto' }}>
+        <Box sx={{ ml: { xs: 0, sm: 'auto' }, width: { xs: '100%', sm: 'auto' } }}>
           <Typography
             variant="body2"
             sx={{

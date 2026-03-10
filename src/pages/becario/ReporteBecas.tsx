@@ -611,12 +611,12 @@ const ReporteBecas = () => {
             </Box>
 
             {/* Botones de acción */}
-            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
               <Button 
                 variant="outlined" 
                 color="inherit"
                 startIcon={<CancelIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', width: { xs: '100%', sm: 'auto' } }}
               >
                 Cancelar
               </Button>
@@ -624,7 +624,7 @@ const ReporteBecas = () => {
                 variant="contained" 
                 color="primary"
                 startIcon={<SaveIcon />}
-                sx={{ textTransform: 'none' }}
+                sx={{ textTransform: 'none', width: { xs: '100%', sm: 'auto' } }}
                 onClick={handleSaveReport}
                 disabled={saving}
               >
@@ -659,15 +659,31 @@ const ReporteBecas = () => {
           ) : (
             <Box sx={{ p: 2 }}>
               {reports.map((report) => (
-                <Paper key={report.id} variant="outlined" sx={{ p: 1.5, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
+                <Paper
+                  key={report.id}
+                  variant="outlined"
+                  sx={{
+                    p: 1.5,
+                    mb: 1,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 1.5,
+                  }}
+                >
+                  <Box sx={{ width: '100%', minWidth: 0 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{report.title}</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {new Date(report.created_at).toLocaleString('es-MX')}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button startIcon={<DownloadIcon />} onClick={() => handleDownloadReport(report)}>
+                  <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
+                    <Button
+                      startIcon={<DownloadIcon />}
+                      onClick={() => handleDownloadReport(report)}
+                      sx={{ width: { xs: '100%', sm: 'auto' } }}
+                    >
                       Descargar
                     </Button>
                     <Button
@@ -675,6 +691,7 @@ const ReporteBecas = () => {
                       startIcon={<DeleteIcon />}
                       onClick={() => handleDeleteReport(report)}
                       disabled={deletingReportId === report.id}
+                      sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                       Eliminar
                     </Button>

@@ -13,6 +13,8 @@ import {
   Chip,
   Button,
   Typography,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Info as InfoIcon } from '@mui/icons-material';
 import { subprojectService } from '../../services/api/subproject';
@@ -293,7 +295,7 @@ const Subprojectos: React.FC = () => {
       {/* Main Content */}
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', flexDirection: { xs: 'column', lg: 'row-reverse' } }}>
         {/* Detail Panel - Right side on large screens */}
-        <Box sx={{ flex: '0 0 320px', minWidth: 0 }}>
+        <Box sx={{ flex: { xs: '1 1 auto', lg: '0 0 320px' }, minWidth: 0, width: '100%' }}>
           <SubprojectosDetailPanel
             subproject={selectedSubproject}
             getStatusLabel={getStatusLabel}
@@ -322,17 +324,17 @@ const Subprojectos: React.FC = () => {
               sx={{
                 borderRadius: 2,
                 boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                overflow: 'hidden',
+                overflow: 'visible',
               }}
             >
-              <TableContainer>
-                <Table>
+              <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table sx={{ minWidth: { xs: 0, sm: 760 }, tableLayout: 'fixed' }}>
                   <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                     <TableRow sx={{ '& th': { textTransform: 'uppercase', letterSpacing: '0.05em' } }}>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '12px' }}>Nombre</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '12px' }}>Región</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '12px' }}>Estado</TableCell>
-                      <TableCell sx={{ fontWeight: 600, fontSize: '12px', width: 140 }}>Acciones</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '12px', px: { xs: 1, sm: 2 } }}>Nombre</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '12px', px: { xs: 1, sm: 2 }, display: { xs: 'none', sm: 'table-cell' } }}>Región</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '12px', px: { xs: 1, sm: 2 } }}>Estado</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '12px', width: { xs: 96, sm: 140 }, px: { xs: 0.5, sm: 2 } }}>Acciones</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -346,13 +348,13 @@ const Subprojectos: React.FC = () => {
                           },
                         }}
                       >
-                        <TableCell sx={{ fontWeight: 500, color: '#1e293b' }}>
+                        <TableCell sx={{ fontWeight: 500, color: '#1e293b', px: { xs: 1, sm: 2 } }}>
                           {subproject.name_subproject}
                         </TableCell>
-                        <TableCell sx={{ color: '#475569' }}>
+                        <TableCell sx={{ color: '#475569', px: { xs: 1, sm: 2 }, display: { xs: 'none', sm: 'table-cell' } }}>
                           {regionMap.get(subproject.id_region ?? subproject.region_id ?? '') ?? 'Sin región'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ px: { xs: 1, sm: 2 } }}>
                           <Chip
                             label={getStatusLabel(subproject.status_id)}
                             size="small"
@@ -363,44 +365,41 @@ const Subprojectos: React.FC = () => {
                             }}
                           />
                         </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Button
-                              size="small"
-                              startIcon={<InfoIcon />}
-                              onClick={() => setSelectedSubproject(subproject)}
-                              variant="text"
-                              sx={{
-                                color: '#26C6DA',
-                                '&:hover': { backgroundColor: 'rgba(38, 198, 218, 0.08)' },
-                              }}
-                            />
-                            <Button
-                              size="small"
-                              startIcon={<EditIcon />}
-                              onClick={() => {
-                                setSelectedSubproject(subproject);
-                                setShowEditDialog(true);
-                              }}
-                              variant="text"
-                              sx={{
-                                color: '#0ea5e9',
-                                '&:hover': { backgroundColor: 'rgba(14, 165, 233, 0.08)' },
-                              }}
-                            />
-                            <Button
-                              size="small"
-                              startIcon={<DeleteIcon />}
-                              onClick={() => {
-                                setSelectedSubproject(subproject);
-                                setShowDeleteDialog(true);
-                              }}
-                              variant="text"
-                              color="error"
-                              sx={{
-                                '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.08)' },
-                              }}
-                            />
+                        <TableCell sx={{ px: { xs: 0.5, sm: 2 } }}>
+                          <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.25 } }}>
+                            <Tooltip title="Ver detalle">
+                              <IconButton
+                                size="small"
+                                onClick={() => setSelectedSubproject(subproject)}
+                                sx={{ color: '#26C6DA' }}
+                              >
+                                <InfoIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Editar">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setSelectedSubproject(subproject);
+                                  setShowEditDialog(true);
+                                }}
+                                sx={{ color: '#0ea5e9' }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Eliminar">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setSelectedSubproject(subproject);
+                                  setShowDeleteDialog(true);
+                                }}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -420,6 +419,8 @@ const Subprojectos: React.FC = () => {
                   borderTop: '1px solid #e2e8f0',
                   '& .MuiTablePagination-toolbar': {
                     minHeight: 56,
+                    flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                    rowGap: 1,
                   },
                 }}
               />

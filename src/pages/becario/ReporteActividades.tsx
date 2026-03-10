@@ -486,13 +486,14 @@ const ReporteActividades: React.FC = () => {
             </Box>
 
             {/* Botones */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, pt: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, pt: 2, flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
                 color="inherit"
                 startIcon={<SaveIcon />}
                 type="button"
                 disabled={saving}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Guardar borrador
               </Button>
@@ -502,6 +503,7 @@ const ReporteActividades: React.FC = () => {
                 startIcon={<SendIcon />}
                 type="submit"
                 disabled={saving}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 {saving ? 'Procesando...' : 'Enviar reporte'}
               </Button>
@@ -543,9 +545,17 @@ const ReporteActividades: React.FC = () => {
                 <Paper
                   key={report.id}
                   variant="outlined"
-                  sx={{ p: 2, mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  sx={{
+                    p: 2,
+                    mb: 1.5,
+                    display: 'flex',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    justifyContent: 'space-between',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 1.5,
+                  }}
                 >
-                  <Box>
+                  <Box sx={{ minWidth: 0, width: '100%' }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                       {report.title}
                     </Typography>
@@ -553,8 +563,12 @@ const ReporteActividades: React.FC = () => {
                       {new Date(report.created_at).toLocaleString('es-MX')}
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button startIcon={<DownloadIcon />} onClick={() => handleDownloadReport(report)}>
+                  <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}>
+                    <Button
+                      startIcon={<DownloadIcon />}
+                      onClick={() => handleDownloadReport(report)}
+                      sx={{ width: { xs: '100%', sm: 'auto' } }}
+                    >
                       Descargar
                     </Button>
                     <Button
@@ -562,6 +576,7 @@ const ReporteActividades: React.FC = () => {
                       startIcon={<DeleteIcon />}
                       onClick={() => handleDeleteReport(report)}
                       disabled={deletingReportId === report.id}
+                      sx={{ width: { xs: '100%', sm: 'auto' } }}
                     >
                       Eliminar
                     </Button>
