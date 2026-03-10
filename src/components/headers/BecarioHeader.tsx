@@ -9,7 +9,6 @@ import {
   IconButton,
   Drawer,
   List,
-  ListItem,
   ListItemIcon,
   ListItemText,
   useMediaQuery,
@@ -17,7 +16,6 @@ import {
   Menu,
   MenuItem,
   Divider,
-  MenuList,
   ListItemButton,
   Collapse
 } from '@mui/material';
@@ -38,6 +36,25 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import unboundLogo from '../../core/assets/images/unbound-logo.webp';
 
+interface MenuLinkItem {
+  label: string;
+  icon: React.ReactNode;
+  path: string;
+  key: string;
+}
+
+interface MenuGroupItem {
+  label: string;
+  icon: React.ReactNode;
+  key: string;
+  items: Array<{ label: string; path: string }>;
+}
+
+type MenuItemType = MenuLinkItem | MenuGroupItem;
+
+const hasPath = (item: MenuItemType): item is MenuLinkItem => 'path' in item;
+const hasItems = (item: MenuItemType): item is MenuGroupItem => 'items' in item;
+
 const BecarioHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,7 +68,7 @@ const BecarioHeader: React.FC = () => {
   const [documentsMenuAnchor, setDocumentsMenuAnchor] = useState<null | HTMLElement>(null);
   const [documentsMenuOpen, setDocumentsMenuOpen] = useState(false);
 
-  const menuItems = [
+  const menuItems: MenuItemType[] = [
     { label: 'Inicio', icon: <Home />, path: '/becario', key: 'inicio' },
     {
       label: 'Reportes',
@@ -247,7 +264,7 @@ const BecarioHeader: React.FC = () => {
                       'aria-labelledby': 'reports-button',
                     }}
                   >
-                    {item.items?.map((subItem) => (
+                    {hasItems(item) && item.items.map((subItem) => (
                       <MenuItem
                         key={subItem.path}
                         onClick={() => handleReportItemClick(subItem.path)}
@@ -294,7 +311,7 @@ const BecarioHeader: React.FC = () => {
                       'aria-labelledby': 'documents-button',
                     }}
                   >
-                    {item.items?.map((subItem) => (
+                    {hasItems(item) && item.items.map((subItem) => (
                       <MenuItem
                         key={subItem.path}
                         onClick={() => handleDocumentItemClick(subItem.path)}
@@ -306,23 +323,25 @@ const BecarioHeader: React.FC = () => {
                   </Menu>
                 </Box>
               ) : (
-                <Button
-                  key={item.key}
-                  startIcon={item.icon}
-                  onClick={() => navigate(item.path)}
-                  sx={{
-                    color: isActive(item.path) ? '#26C6DA' : '#64748b',
-                    fontWeight: isActive(item.path) ? 600 : 400,
-                    '&:hover': {
-                      bgcolor: 'transparent',
-                      color: '#26C6DA',
-                    },
-                    textTransform: 'none',
-                    px: 2,
-                  }}
-                >
-                  {item.label}
-                </Button>
+                  hasPath(item) ? (
+                    <Button
+                      key={item.key}
+                      startIcon={item.icon}
+                      onClick={() => navigate(item.path)}
+                      sx={{
+                        color: isActive(item.path) ? '#26C6DA' : '#64748b',
+                        fontWeight: isActive(item.path) ? 600 : 400,
+                        '&:hover': {
+                          bgcolor: 'transparent',
+                          color: '#26C6DA',
+                        },
+                        textTransform: 'none',
+                        px: 2,
+                      }}
+                    >
+                      {item.label}
+                    </Button>
+                  ) : null
               )
             ))}
           </Box>
@@ -405,7 +424,7 @@ const BecarioHeader: React.FC = () => {
                 </ListItemButton>
                 <Collapse in={Boolean(reportsMenuAnchor)} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
-                    {item.items?.map((subItem) => (
+                    {hasItems(item) && item.items.map((subItem) => (
                       <ListItemButton
                         key={subItem.path}
                         onClick={() => handleReportItemClick(subItem.path)}
@@ -446,7 +465,7 @@ const BecarioHeader: React.FC = () => {
                 </ListItemButton>
                 <Collapse in={documentsMenuOpen} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
-                    {item.items?.map((subItem) => (
+                    {hasItems(item) && item.items.map((subItem) => (
                       <ListItemButton
                         key={subItem.path}
                         onClick={() => handleDocumentItemClick(subItem.path)}
@@ -467,24 +486,25 @@ const BecarioHeader: React.FC = () => {
                 </Collapse>
               </React.Fragment>
             ) : (
-              <ListItem
-                key={item.key}
-                button
-                onClick={() => handleMobileMenuItemClick(item.path)}
-                sx={{
-                  color: isActive(item.path) ? '#26C6DA' : '#64748b',
-                  fontWeight: isActive(item.path) ? 600 : 400,
-                  '&:hover': {
-                    bgcolor: 'transparent',
-                    color: '#26C6DA',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: 'inherit' }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.label} />
-              </ListItem>
+              hasPath(item) ? (
+                <ListItemButton
+                  key={item.key}
+                  onClick={() => handleMobileMenuItemClick(item.path)}
+                  sx={{
+                    color: isActive(item.path) ? '#26C6DA' : '#64748b',
+                    fontWeight: isActive(item.path) ? 600 : 400,
+                    '&:hover': {
+                      bgcolor: 'transparent',
+                      color: '#26C6DA',
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.label} />
+                </ListItemButton>
+              ) : null
             )
           ))}
         </List>
